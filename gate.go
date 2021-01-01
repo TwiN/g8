@@ -14,10 +14,15 @@ type Gate struct {
 	unauthorizedResponseBody []byte
 }
 
-func New() *Gate {
+func NewGate() *Gate {
 	return &Gate{
 		unauthorizedResponseBody: []byte(DefaultUnauthorizedResponseBody),
 	}
+}
+
+func (gate *Gate) WithAuthorizationService(authorizationService *AuthorizationService) *Gate {
+	gate.authorizationService = authorizationService
+	return gate
 }
 
 // TODO: ProtectWithRoleLevel. should also return 403 instead of 401
