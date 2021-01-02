@@ -1,18 +1,18 @@
 package g8
 
-type TokenProvider struct {
-	cacheTokens bool
+type ClientProvider struct {
+	cache bool
 
-	tokenExistsFunc func(token string) bool
+	getClientByTokenFunc func(token string) *Client
 }
 
-func NewTokenProvider(tokenExistsFunc func(token string) bool) *TokenProvider {
-	return &TokenProvider{
-		cacheTokens:     false,
-		tokenExistsFunc: tokenExistsFunc,
+func NewClientProvider(getClientByTokenFunc func(token string) *Client) *ClientProvider {
+	return &ClientProvider{
+		cache:                false,
+		getClientByTokenFunc: getClientByTokenFunc,
 	}
 }
 
-func (provider *TokenProvider) Exists(token string) bool {
-	return provider.tokenExistsFunc(token)
+func (provider *ClientProvider) GetClientByToken(token string) *Client {
+	return provider.getClientByTokenFunc(token)
 }

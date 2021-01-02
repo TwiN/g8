@@ -14,23 +14,33 @@ type Gate struct {
 	unauthorizedResponseBody []byte
 }
 
-func NewGate() *Gate {
+// NewGate creates a new Gate.
+func NewGate(authorizationService *AuthorizationService) *Gate {
 	return &Gate{
 		unauthorizedResponseBody: []byte(DefaultUnauthorizedResponseBody),
+		authorizationService:     authorizationService,
 	}
 }
 
-func (gate *Gate) WithAuthorizationService(authorizationService *AuthorizationService) *Gate {
-	gate.authorizationService = authorizationService
+func (gate *Gate) WithCustomUnauthorizedResponseBody(unauthorizedResponseBody []byte) *Gate {
+	gate.unauthorizedResponseBody = unauthorizedResponseBody
 	return gate
 }
 
-// TODO: ProtectWithRoleLevel. should also return 403 instead of 401
+// Protect secures a handler, requiring requests going through to have a valid Authorization bearer token.
+// Unlike ProtectWithPermissions, Protect will allow access to any existing clients, regardless of their permissions
+// or lack thereof.
 func (gate *Gate) Protect(handler http.Handler) http.Handler {
+	return gate.ProtectWithPermissions(handler, nil)
+}
+
+// ProtectWithPermissions secures a handler, requiring requests going through to have a valid Authorization bearer token
+// as well as a slice of permissions that must be met.
+func (gate *Gate) ProtectWithPermissions(handler http.Handler, permissions []string) http.Handler {
 	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		if gate.authorizationService != nil {
 			token := gate.authorizationService.extractTokenFromRequest(request)
-			if !gate.authorizationService.IsAuthorized(token) {
+			if !gate.authorizationService.IsAuthorized(token, permissions) {
 				writer.WriteHeader(http.StatusUnauthorized)
 				_, _ = writer.Write(gate.unauthorizedResponseBody)
 				return
@@ -38,9 +48,4 @@ func (gate *Gate) Protect(handler http.Handler) http.Handler {
 		}
 		handler.ServeHTTP(writer, request)
 	})
-}
-
-func (gate *Gate) WithCustomUnauthorizedResponseBody(unauthorizedResponseBody []byte) *Gate {
-	gate.unauthorizedResponseBody = unauthorizedResponseBody
-	return gate
 }
