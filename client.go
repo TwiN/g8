@@ -5,29 +5,32 @@ type Client struct {
 	Permissions []string
 }
 
+// NewClient creates a Client with a given token
 func NewClient(token string) *Client {
 	return &Client{
 		Token: token,
 	}
 }
 
+// NewClientWithPermissions creates a Client with a slice of permissions
+// Equivalent to using NewClient and WithPermissions
 func NewClientWithPermissions(token string, permissions []string) *Client {
-	return &Client{
-		Token:       token,
-		Permissions: permissions,
-	}
+	return NewClient(token).WithPermissions(permissions)
 }
 
+// WithPermissions adds a slice of permissions to a client
 func (client *Client) WithPermissions(permissions []string) *Client {
 	client.Permissions = append(client.Permissions, permissions...)
 	return client
 }
 
+// WithPermission adds a permission to a client
 func (client *Client) WithPermission(permission string) *Client {
 	client.Permissions = append(client.Permissions, permission)
 	return client
 }
 
+// HasPermission checks whether a client has a given permission
 func (client Client) HasPermission(permissionRequired string) bool {
 	for _, permission := range client.Permissions {
 		if permissionRequired == permission {
@@ -37,6 +40,7 @@ func (client Client) HasPermission(permissionRequired string) bool {
 	return false
 }
 
+// HasPermissions checks whether a client has the all permissions passed
 func (client Client) HasPermissions(permissionsRequired []string) bool {
 	for _, permissionRequired := range permissionsRequired {
 		if !client.HasPermission(permissionRequired) {
