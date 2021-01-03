@@ -49,3 +49,21 @@ func (gate *Gate) ProtectWithPermissions(handler http.Handler, permissions []str
 		handler.ServeHTTP(writer, request)
 	})
 }
+
+func (gate *Gate) ProtectFunc(handlerFunc http.HandlerFunc) http.HandlerFunc {
+	return gate.ProtectFuncWithPermissions(handlerFunc, nil)
+}
+
+func (gate *Gate) ProtectFuncWithPermissions(handlerFunc http.HandlerFunc, permissions []string) http.HandlerFunc {
+	return func(writer http.ResponseWriter, request *http.Request) {
+		if gate.authorizationService != nil {
+			token := gate.authorizationService.extractTokenFromRequest(request)
+			if !gate.authorizationService.IsAuthorized(token, permissions) {
+				writer.WriteHeader(http.StatusUnauthorized)
+				_, _ = writer.Write(gate.unauthorizedResponseBody)
+				return
+			}
+		}
+		handlerFunc(writer, request)
+	}
+}
