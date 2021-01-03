@@ -1,5 +1,11 @@
 # g8
 
+![build](https://github.com/TwinProduction/g8/workflows/build/badge.svg?branch=master) 
+[![Go Report Card](https://goreportcard.com/badge/github.com/TwinProduction/g8)](https://goreportcard.com/report/github.com/TwinProduction/g8)
+[![codecov](https://codecov.io/gh/TwinProduction/g8/branch/master/graph/badge.svg)](https://codecov.io/gh/TwinProduction/g8)
+[![Go version](https://img.shields.io/github/go-mod/go-version/TwinProduction/g8.svg)](https://github.com/TwinProduction/g8)
+[![Go Reference](https://pkg.go.dev/badge/github.com/TwinProduction/g8.svg)](https://pkg.go.dev/github.com/TwinProduction/g8)
+
 G8, pronounced Gate, is a simple Go library for protecting HTTP handlers with tokens.
 
 Tired of constantly re-implementing a security layer for each of applications? Me too, that's why I made G8

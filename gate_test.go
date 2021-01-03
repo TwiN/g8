@@ -31,11 +31,11 @@ var (
 type testHandler struct {
 }
 
-func (handler *testHandler) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
+func (handler *testHandler) ServeHTTP(writer http.ResponseWriter, _ *http.Request) {
 	writer.WriteHeader(http.StatusOK)
 }
 
-func testHandlerFunc(writer http.ResponseWriter, request *http.Request) {
+func testHandlerFunc(writer http.ResponseWriter, _ *http.Request) {
 	writer.WriteHeader(http.StatusOK)
 }
 
