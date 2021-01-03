@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 )
 
@@ -164,7 +165,7 @@ func TestGate_ProtectWithPermissionsWhenValidTokenAndInsufficientPermissionsWhil
 }
 
 func TestGate_ProtectWithPermissionsWhenClientHasSufficientPermissions(t *testing.T) {
-	gate := NewGate(NewAuthorizationService().WithClient(NewClientWithPermissions("token", []string{"admin"})))
+	gate := NewGate(NewAuthorizationService().WithClient(NewClient("token").WithPermission("admin")))
 	request, _ := http.NewRequest("GET", "/handle", nil)
 	request.Header.Add("Authorization", fmt.Sprintf("Bearer %s", "token"))
 	responseRecorder := httptest.NewRecorder()
@@ -225,4 +226,35 @@ func TestGate_ProtectFuncWithValidToken(t *testing.T) {
 	if responseRecorder.Code != http.StatusOK {
 		t.Errorf("%s %s should have returned %d, but returned %d instead", request.Method, request.URL, http.StatusOK, responseRecorder.Code)
 	}
+}
+
+func TestGate_ProtectWithPermissions(t *testing.T) {
+	gate := NewGate(NewAuthorizationService().WithClient(NewClient("mytoken").WithPermissions([]string{"create", "read", "update", "delete"})))
+
+	router := http.NewServeMux()
+	router.Handle("/create", gate.ProtectWithPermissions(&testHandler{}, []string{"create"}))
+	router.Handle("/read", gate.ProtectWithPermissions(&testHandler{}, []string{"read"}))
+	router.Handle("/update", gate.ProtectWithPermissions(&testHandler{}, []string{"update"}))
+	router.Handle("/delete", gate.ProtectWithPermissions(&testHandler{}, []string{"delete"}))
+	router.Handle("/crud", gate.ProtectWithPermissions(&testHandler{}, []string{"create", "read", "update", "delete"}))
+	router.Handle("/backup", gate.ProtectWithPermissions(&testHandler{}, []string{"read", "backup"}))
+
+	checkRouterOutput(t, router, "/create", http.StatusOK)
+	checkRouterOutput(t, router, "/read", http.StatusOK)
+	checkRouterOutput(t, router, "/update", http.StatusOK)
+	checkRouterOutput(t, router, "/delete", http.StatusOK)
+	checkRouterOutput(t, router, "/crud", http.StatusOK)
+	checkRouterOutput(t, router, "/backup", http.StatusUnauthorized)
+}
+
+func checkRouterOutput(t *testing.T, router *http.ServeMux, url string, expectedResponseCode int) {
+	t.Run(strings.TrimPrefix(url, "/"), func(t *testing.T) {
+		request, _ := http.NewRequest("GET", url, nil)
+		request.Header.Add("Authorization", fmt.Sprintf("Bearer %s", "mytoken"))
+		responseRecorder := httptest.NewRecorder()
+		router.ServeHTTP(responseRecorder, request)
+		if responseRecorder.Code != expectedResponseCode {
+			t.Errorf("%s %s should have returned %d, but returned %d instead", request.Method, request.URL, expectedResponseCode, responseRecorder.Code)
+		}
+	})
 }
