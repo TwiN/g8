@@ -95,5 +95,5 @@ func (authorizationService *AuthorizationService) IsAuthorized(token string, per
 }
 
 func (authorizationService *AuthorizationService) extractTokenFromRequest(request *http.Request) string {
-	return strings.Replace(request.Header.Get(AuthorizationHeader), "Bearer ", "", 1)
+	return strings.TrimPrefix(request.Header.Get(AuthorizationHeader), "Bearer ")
 }
