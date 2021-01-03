@@ -8,7 +8,7 @@
 
 G8, pronounced Gate, is a simple Go library for protecting HTTP handlers with tokens.
 
-Tired of constantly re-implementing a security layer for each of applications? Me too, that's why I made G8
+Tired of constantly re-implementing a security layer for each of applications? Me too, that's why I made G8.
 
 
 ## Installation
@@ -79,11 +79,15 @@ gate := g8.NewGate(g8.NewAuthorizationService().WithClient(g8.NewClient("mytoken
 
 ### With client provider
 
-A client provider should be used when you have a lot of tokens and it wouldn't make sense to register all of them using
+A client provider's task is to retrieve a Client from an external source (e.g. a database) when provided with a token.
+You should use a client provider when you have a lot of tokens and it wouldn't make sense to register all of them using
 `AuthorizationService`'s `WithToken`/`WithTokens`/`WithClient`/`WithClients`.
 
+Note that the provider is used as a fallback source. As such, if a token is explicitly registered using one of the 4 
+aforementioned functions, the client provider will not be used.
+
 ```go
-clientProvider := g8.NewClientProvider(func(token string) *Client {
+clientProvider := g8.NewClientProvider(func(token string) *g8.Client {
     // We'll assume that the following function calls your database and returns a struct "User" that 
     // has the user's token as well as the permissions granted to said user
     user := database.GetUserByToken(token)
@@ -94,6 +98,8 @@ clientProvider := g8.NewClientProvider(func(token string) *Client {
 })
 gate := g8.NewGate(g8.NewAuthorizationService().WithClientProvider(clientProvider))
 ```
+
+To avoid any misunderstandings, using a client provider is not mandatory.
 
 
 ## AuthorizationService
@@ -128,7 +134,10 @@ Be aware that g8.Client supports a list of permissions as well. You may call `Wi
 
 Unlike client permissions, handler permissions are requirements.
 
-A client with the permissions `create`, `read`, `update` and `delete` would have access to all of these handlers:
+A client may have as many permissions as you want, but for said client to have access to a handler protected by
+permissions, the client must have all permissions defined by said handler in order to have access to it.
+
+In other words, a client with the permissions `create`, `read`, `update` and `delete` would have access to all of these handlers:
 ```go
 gate := g8.NewGate(g8.NewAuthorizationService().WithClient(g8.NewClient("mytoken").WithPermissions([]string{"create", "read", "update", "delete"})))
 router := http.NewServeMux()
@@ -144,4 +153,3 @@ have the `backup` permission:
 ```go
 router.Handle("/backup", gate.ProtectWithPermissions(&testHandler{}, []string{"read", "backup"}))
 ```
-
