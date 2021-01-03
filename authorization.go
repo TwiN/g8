@@ -3,6 +3,7 @@ package g8
 import (
 	"net/http"
 	"strings"
+	"sync"
 )
 
 // AuthorizationService is the service that manages client/token registry and client fallback as well as the service
@@ -10,6 +11,8 @@ import (
 type AuthorizationService struct {
 	clients        map[string]*Client
 	clientProvider *ClientProvider
+
+	sync.RWMutex
 }
 
 // NewAuthorizationService creates a new AuthorizationService
@@ -39,15 +42,19 @@ func NewAuthorizationService() *AuthorizationService {
 // If you wish to configure advanced permissions, consider using WithClient instead.
 //
 func (authorizationService *AuthorizationService) WithToken(token string) *AuthorizationService {
+	authorizationService.Lock()
 	authorizationService.clients[token] = NewClient(token)
+	authorizationService.Unlock()
 	return authorizationService
 }
 
 // WithTokens is used to specify a slice of tokens for which authorization will be granted
 func (authorizationService *AuthorizationService) WithTokens(tokens []string) *AuthorizationService {
+	authorizationService.Lock()
 	for _, token := range tokens {
 		authorizationService.clients[token] = NewClient(token)
 	}
+	authorizationService.Unlock()
 	return authorizationService
 }
 
@@ -69,15 +76,19 @@ func (authorizationService *AuthorizationService) WithTokens(tokens []string) *A
 // Calling this function multiple times will add multiple clients, though you may want to use WithClients instead
 // if you plan to add multiple clients
 func (authorizationService *AuthorizationService) WithClient(client *Client) *AuthorizationService {
+	authorizationService.Lock()
 	authorizationService.clients[client.Token] = client
+	authorizationService.Unlock()
 	return authorizationService
 }
 
 // WithClients is used to specify a slice of clients for which authorization will be granted
 func (authorizationService *AuthorizationService) WithClients(clients []*Client) *AuthorizationService {
+	authorizationService.Lock()
 	for _, client := range clients {
 		authorizationService.clients[client.Token] = client
 	}
+	authorizationService.Unlock()
 	return authorizationService
 }
 
@@ -98,7 +109,9 @@ func (authorizationService *AuthorizationService) IsAuthorized(token string, per
 	if len(token) == 0 {
 		return false
 	}
+	authorizationService.RLock()
 	client, _ := authorizationService.clients[token]
+	authorizationService.RUnlock()
 	// If there's no clients with the given token directly stored in the AuthorizationService, fall back to the
 	// client provider, if there's one configured.
 	if client == nil && authorizationService.clientProvider != nil {
