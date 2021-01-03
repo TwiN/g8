@@ -141,7 +141,7 @@ In other words, a client with the permissions `create`, `read`, `update` and `de
 ```go
 gate := g8.NewGate(g8.NewAuthorizationService().WithClient(g8.NewClient("mytoken").WithPermissions([]string{"create", "read", "update", "delete"})))
 router := http.NewServeMux()
-router.Handle("/", gate.Protect(createHandler)) // equivalent of gate.ProtectWithPermissions(createHandler, []string{})
+router.Handle("/", gate.Protect(homeHandler)) // equivalent of gate.ProtectWithPermissions(homeHandler, []string{})
 router.Handle("/create", gate.ProtectWithPermissions(createHandler, []string{"create"}))
 router.Handle("/read", gate.ProtectWithPermissions(readHandler, []string{"read"}))
 router.Handle("/update", gate.ProtectWithPermissions(updateHandler, []string{"update"}))
