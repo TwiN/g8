@@ -1,7 +1,14 @@
 package g8
 
+// Client is a struct containing both a Token and a slice of extra Permissions that said token has.
 type Client struct {
-	Token       string
+	// Token is the Bearer token found in the value of a Authorization header
+	Token string
+
+	// Permissions is a slice of extra permissions that may be used for more granular access control.
+	//
+	// If you only wish to use Gate.Protect and Gate.ProtectFunc, you do not have to worry about this,
+	// since they're only used by Gate.ProtectWithPermissions and Gate.ProtectFuncWithPermissions
 	Permissions []string
 }
 
