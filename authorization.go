@@ -25,13 +25,13 @@ func NewAuthorizationService() *AuthorizationService {
 // specific permission.
 //
 // In other words, if you were to do the following:
-//     gate := g8.NewGate(NewAuthorizationService().WithToken("12345"))
+//     gate := g8.NewGate(g8.NewAuthorizationService().WithToken("12345"))
 //
 // The following handler would be accessible with the token 12345:
-//     gate.Protect(yourHandler)
+//     router.Handle("/1st-handler", gate.Protect(yourHandler))
 //
 // But not this one would not be accessible with the token 12345:
-//     gate.ProtectWithPermissions(yourHandler, []string{"admin"})
+//     router.Handle("/2nd-handler", gate.ProtectWithPermissions(yourOtherHandler, []string{"admin"}))
 //
 // Calling this function multiple times will add multiple clients, though you may want to use WithTokens instead
 // if you plan to add multiple clients
@@ -52,6 +52,19 @@ func (authorizationService *AuthorizationService) WithTokens(tokens []string) *A
 }
 
 // WithClient is used to specify a single client for which authorization will be granted
+//
+// When compared to WithToken, the advantage of using this function is that you may specify the client's
+// permissions and thus, be a lot more granular with what endpoint a token has access to.
+//
+// In other words, if you were to do the following:
+//     gate := g8.NewGate(g8.NewAuthorizationService().WithClient(g8.NewClient("12345").WithPermission("mod")))
+//
+// The following handlers would be accessible with the token 12345:
+//     router.Handle("/1st-handler", gate.ProtectWithPermissions(yourHandler, []string{"mod"}))
+//     router.Handle("/2nd-handler", gate.Protect(yourOtherHandler))
+//
+// But not this one, because the user does not have the permission "admin":
+//     router.Handle("/3rd-handler", gate.ProtectWithPermissions(yetAnotherHandler, []string{"admin"}))
 //
 // Calling this function multiple times will add multiple clients, though you may want to use WithClients instead
 // if you plan to add multiple clients
@@ -82,6 +95,9 @@ func (authorizationService *AuthorizationService) WithClientProvider(provider *C
 // If permissionsRequired is nil or empty and a client with the given token exists, said client will have access to all
 // handlers that are not protected by a given permission.
 func (authorizationService *AuthorizationService) IsAuthorized(token string, permissionsRequired []string) bool {
+	if len(token) == 0 {
+		return false
+	}
 	client, _ := authorizationService.clients[token]
 	// If there's no clients with the given token directly stored in the AuthorizationService, fall back to the
 	// client provider, if there's one configured.
