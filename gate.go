@@ -32,7 +32,7 @@ func (gate *Gate) WithCustomUnauthorizedResponseBody(unauthorizedResponseBody []
 // Unlike ProtectWithPermissions, Protect will allow access to any registered tokens, regardless of their permissions
 // or lack thereof.
 //
-//    gate := NewGate(NewAuthorizationService().WithToken("token"))
+//    gate := g8.NewGate(g8.NewAuthorizationService().WithToken("token"))
 //    router := http.NewServeMux()
 //    // Without protection
 //    router.Handle("/handle", yourHandler)
@@ -74,7 +74,7 @@ func (gate *Gate) ProtectWithPermissions(handler http.Handler, permissions []str
 // Unlike ProtectFuncWithPermissions, ProtectFunc will allow access to any registered tokens, regardless of their
 // permissions or lack thereof.
 //
-//    gate := NewGate(NewAuthorizationService().WithToken("token"))
+//    gate := g8.NewGate(g8.NewAuthorizationService().WithToken("token"))
 //    router := http.NewServeMux()
 //    // Without protection
 //    router.HandleFunc("/handle", yourHandlerFunc)
