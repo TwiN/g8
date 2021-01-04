@@ -2,6 +2,7 @@ package g8
 
 import (
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -257,4 +258,22 @@ func checkRouterOutput(t *testing.T, router *http.ServeMux, url string, expected
 			t.Errorf("%s %s should have returned %d, but returned %d instead", request.Method, request.URL, expectedResponseCode, responseRecorder.Code)
 		}
 	})
+}
+
+func TestGate_WithCustomUnauthorizedResponseBody(t *testing.T) {
+	gate := NewGate(NewAuthorizationService()).WithCustomUnauthorizedResponseBody([]byte("test"))
+	request, _ := http.NewRequest("GET", "/handle", nil)
+	request.Header.Add("Authorization", fmt.Sprintf("Bearer %s", "bad-token"))
+	responseRecorder := httptest.NewRecorder()
+
+	router := http.NewServeMux()
+	router.Handle("/handle", gate.Protect(&testHandler{}))
+	router.ServeHTTP(responseRecorder, request)
+
+	if responseRecorder.Code != http.StatusUnauthorized {
+		t.Errorf("%s %s should have returned %d, but returned %d instead", request.Method, request.URL, http.StatusUnauthorized, responseRecorder.Code)
+	}
+	if responseBody, _ := ioutil.ReadAll(responseRecorder.Body); string(responseBody) != "test" {
+		t.Errorf("%s %s should have returned %s, but returned %s instead", request.Method, request.URL, "test", string(responseBody))
+	}
 }
