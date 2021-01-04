@@ -183,17 +183,82 @@ func TestGate_ProtectWithPermissionsWhenClientHasSufficientPermissions(t *testin
 }
 
 func TestGate_ProtectWithPermissionsWhenClientHasInsufficientPermissions(t *testing.T) {
-	gate := NewGate(NewAuthorizationService().WithClient(NewClientWithPermissions("token", []string{"moderator"})))
+	gate := NewGate(NewAuthorizationService().WithClient(NewClientWithPermissions("token", []string{"mod"})))
 	request, _ := http.NewRequest("GET", "/handle", nil)
 	request.Header.Add("Authorization", fmt.Sprintf("Bearer %s", "token"))
 	responseRecorder := httptest.NewRecorder()
 
 	router := http.NewServeMux()
-	router.Handle("/handle", gate.ProtectWithPermissions(&testHandler{}, []string{"administrator"}))
+	router.Handle("/handle", gate.ProtectWithPermissions(&testHandler{}, []string{"admin"}))
 	router.ServeHTTP(responseRecorder, request)
 
-	// Since the client registered directly in the AuthorizationService has the permission "moderator" and the
-	// testHandler is protected by the permission "administrator", the request should be not be authorized
+	// Since the client registered directly in the AuthorizationService has the permission "mod" and the
+	// testHandler is protected by the permission "admin", the request should be not be authorized
+	if responseRecorder.Code != http.StatusUnauthorized {
+		t.Errorf("%s %s should have returned %d, but returned %d instead", request.Method, request.URL, http.StatusUnauthorized, responseRecorder.Code)
+	}
+}
+
+func TestGate_ProtectWithPermissions(t *testing.T) {
+	gate := NewGate(NewAuthorizationService().WithClient(NewClient("mytoken").WithPermissions([]string{"create", "read", "update", "delete"})))
+
+	router := http.NewServeMux()
+	router.Handle("/create", gate.ProtectWithPermissions(&testHandler{}, []string{"create"}))
+	router.Handle("/read", gate.ProtectWithPermissions(&testHandler{}, []string{"read"}))
+	router.Handle("/update", gate.ProtectWithPermissions(&testHandler{}, []string{"update"}))
+	router.Handle("/delete", gate.ProtectWithPermissions(&testHandler{}, []string{"delete"}))
+	router.Handle("/crud", gate.ProtectWithPermissions(&testHandler{}, []string{"create", "read", "update", "delete"}))
+	router.Handle("/backup", gate.ProtectWithPermissions(&testHandler{}, []string{"read", "backup"}))
+
+	checkRouterOutput := func(t *testing.T, router *http.ServeMux, url string, expectedResponseCode int) {
+		t.Run(strings.TrimPrefix(url, "/"), func(t *testing.T) {
+			request, _ := http.NewRequest("GET", url, nil)
+			request.Header.Add("Authorization", fmt.Sprintf("Bearer %s", "mytoken"))
+			responseRecorder := httptest.NewRecorder()
+			router.ServeHTTP(responseRecorder, request)
+			if responseRecorder.Code != expectedResponseCode {
+				t.Errorf("%s %s should have returned %d, but returned %d instead", request.Method, request.URL, expectedResponseCode, responseRecorder.Code)
+			}
+		})
+	}
+
+	checkRouterOutput(t, router, "/create", http.StatusOK)
+	checkRouterOutput(t, router, "/read", http.StatusOK)
+	checkRouterOutput(t, router, "/update", http.StatusOK)
+	checkRouterOutput(t, router, "/delete", http.StatusOK)
+	checkRouterOutput(t, router, "/crud", http.StatusOK)
+	checkRouterOutput(t, router, "/backup", http.StatusUnauthorized)
+}
+
+func TestGate_ProtectWithPermissionWhenClientHasSufficientPermissions(t *testing.T) {
+	gate := NewGate(NewAuthorizationService().WithClient(NewClient("token").WithPermission("admin")))
+	request, _ := http.NewRequest("GET", "/handle", nil)
+	request.Header.Add("Authorization", fmt.Sprintf("Bearer %s", "token"))
+	responseRecorder := httptest.NewRecorder()
+
+	router := http.NewServeMux()
+	router.Handle("/handle", gate.ProtectWithPermission(&testHandler{}, "admin"))
+	router.ServeHTTP(responseRecorder, request)
+
+	// Since the client registered directly in the AuthorizationService has the permission "admin" and the testHandler
+	// is protected by the permission "admin", the request should be authorized
+	if responseRecorder.Code != http.StatusOK {
+		t.Errorf("%s %s should have returned %d, but returned %d instead", request.Method, request.URL, http.StatusOK, responseRecorder.Code)
+	}
+}
+
+func TestGate_ProtectWithPermissionWhenClientHasInsufficientPermissions(t *testing.T) {
+	gate := NewGate(NewAuthorizationService().WithClient(NewClientWithPermissions("token", []string{"mod"})))
+	request, _ := http.NewRequest("GET", "/handle", nil)
+	request.Header.Add("Authorization", fmt.Sprintf("Bearer %s", "token"))
+	responseRecorder := httptest.NewRecorder()
+
+	router := http.NewServeMux()
+	router.Handle("/handle", gate.ProtectWithPermission(&testHandler{}, "admin"))
+	router.ServeHTTP(responseRecorder, request)
+
+	// Since the client registered directly in the AuthorizationService has the permission "mod" and the
+	// testHandler is protected by the permission "admin", the request should be not be authorized
 	if responseRecorder.Code != http.StatusUnauthorized {
 		t.Errorf("%s %s should have returned %d, but returned %d instead", request.Method, request.URL, http.StatusUnauthorized, responseRecorder.Code)
 	}
@@ -229,35 +294,38 @@ func TestGate_ProtectFuncWithValidToken(t *testing.T) {
 	}
 }
 
-func TestGate_ProtectWithPermissions(t *testing.T) {
-	gate := NewGate(NewAuthorizationService().WithClient(NewClient("mytoken").WithPermissions([]string{"create", "read", "update", "delete"})))
+func TestGate_ProtectFuncWithPermissionWhenClientHasSufficientPermissions(t *testing.T) {
+	gate := NewGate(NewAuthorizationService().WithClient(NewClient("token").WithPermission("admin")))
+	request, _ := http.NewRequest("GET", "/handle", nil)
+	request.Header.Add("Authorization", fmt.Sprintf("Bearer %s", "token"))
+	responseRecorder := httptest.NewRecorder()
 
 	router := http.NewServeMux()
-	router.Handle("/create", gate.ProtectWithPermissions(&testHandler{}, []string{"create"}))
-	router.Handle("/read", gate.ProtectWithPermissions(&testHandler{}, []string{"read"}))
-	router.Handle("/update", gate.ProtectWithPermissions(&testHandler{}, []string{"update"}))
-	router.Handle("/delete", gate.ProtectWithPermissions(&testHandler{}, []string{"delete"}))
-	router.Handle("/crud", gate.ProtectWithPermissions(&testHandler{}, []string{"create", "read", "update", "delete"}))
-	router.Handle("/backup", gate.ProtectWithPermissions(&testHandler{}, []string{"read", "backup"}))
+	router.Handle("/handle", gate.ProtectFunc(testHandlerFunc))
+	router.ServeHTTP(responseRecorder, request)
 
-	checkRouterOutput(t, router, "/create", http.StatusOK)
-	checkRouterOutput(t, router, "/read", http.StatusOK)
-	checkRouterOutput(t, router, "/update", http.StatusOK)
-	checkRouterOutput(t, router, "/delete", http.StatusOK)
-	checkRouterOutput(t, router, "/crud", http.StatusOK)
-	checkRouterOutput(t, router, "/backup", http.StatusUnauthorized)
+	// Since the client registered directly in the AuthorizationService has the permission "admin" and the testHandler
+	// is protected by the permission "admin", the request should be authorized
+	if responseRecorder.Code != http.StatusOK {
+		t.Errorf("%s %s should have returned %d, but returned %d instead", request.Method, request.URL, http.StatusOK, responseRecorder.Code)
+	}
 }
 
-func checkRouterOutput(t *testing.T, router *http.ServeMux, url string, expectedResponseCode int) {
-	t.Run(strings.TrimPrefix(url, "/"), func(t *testing.T) {
-		request, _ := http.NewRequest("GET", url, nil)
-		request.Header.Add("Authorization", fmt.Sprintf("Bearer %s", "mytoken"))
-		responseRecorder := httptest.NewRecorder()
-		router.ServeHTTP(responseRecorder, request)
-		if responseRecorder.Code != expectedResponseCode {
-			t.Errorf("%s %s should have returned %d, but returned %d instead", request.Method, request.URL, expectedResponseCode, responseRecorder.Code)
-		}
-	})
+func TestGate_ProtectFuncWithPermissionWhenClientHasInsufficientPermissions(t *testing.T) {
+	gate := NewGate(NewAuthorizationService().WithClient(NewClientWithPermissions("token", []string{"mod"})))
+	request, _ := http.NewRequest("GET", "/handle", nil)
+	request.Header.Add("Authorization", fmt.Sprintf("Bearer %s", "token"))
+	responseRecorder := httptest.NewRecorder()
+
+	router := http.NewServeMux()
+	router.Handle("/handle", gate.ProtectFuncWithPermission(testHandlerFunc, "admin"))
+	router.ServeHTTP(responseRecorder, request)
+
+	// Since the client registered directly in the AuthorizationService has the permission "mod" and the
+	// testHandler is protected by the permission "admin", the request should be not be authorized
+	if responseRecorder.Code != http.StatusUnauthorized {
+		t.Errorf("%s %s should have returned %d, but returned %d instead", request.Method, request.URL, http.StatusUnauthorized, responseRecorder.Code)
+	}
 }
 
 func TestGate_WithCustomUnauthorizedResponseBody(t *testing.T) {

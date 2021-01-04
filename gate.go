@@ -54,20 +54,19 @@ func (gate *Gate) Protect(handler http.Handler) http.Handler {
 //    router.Handle("/handle", gate.ProtectWithPermissions(yourHandler, []string{"admin"}))
 //
 func (gate *Gate) ProtectWithPermissions(handler http.Handler, permissions []string) http.Handler {
-	//return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-	//	if gate.authorizationService != nil {
-	//		token := gate.authorizationService.extractTokenFromRequest(request)
-	//		if !gate.authorizationService.IsAuthorized(token, permissions) {
-	//			writer.WriteHeader(http.StatusUnauthorized)
-	//			_, _ = writer.Write(gate.unauthorizedResponseBody)
-	//			return
-	//		}
-	//	}
-	//	handler.ServeHTTP(writer, request)
-	//})
 	return gate.ProtectFuncWithPermissions(func(writer http.ResponseWriter, request *http.Request) {
 		handler.ServeHTTP(writer, request)
 	}, permissions)
+}
+
+// ProtectWithPermission does the same thing as ProtectWithPermissions, but for a single permission instead of a
+// slice of permissions
+//
+// See ProtectWithPermissions for further documentation
+func (gate *Gate) ProtectWithPermission(handler http.Handler, permission string) http.Handler {
+	return gate.ProtectFuncWithPermissions(func(writer http.ResponseWriter, request *http.Request) {
+		handler.ServeHTTP(writer, request)
+	}, []string{permission})
 }
 
 // ProtectFunc secures a handlerFunc, requiring requests going through to have a valid Authorization Bearer token.
@@ -107,4 +106,12 @@ func (gate *Gate) ProtectFuncWithPermissions(handlerFunc http.HandlerFunc, permi
 		}
 		handlerFunc(writer, request)
 	}
+}
+
+// ProtectFuncWithPermission does the same thing as ProtectFuncWithPermissions, but for a single permission instead of a
+// slice of permissions
+//
+// See ProtectFuncWithPermissions for further documentation
+func (gate *Gate) ProtectFuncWithPermission(handlerFunc http.HandlerFunc, permission string) http.Handler {
+	return gate.ProtectFuncWithPermissions(handlerFunc, []string{permission})
 }
