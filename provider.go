@@ -1,5 +1,11 @@
 package g8
 
+import (
+	"time"
+
+	"github.com/TwinProduction/gocache"
+)
+
 // ClientProvider has the task of retrieving a Client from an external source (e.g. a database) when provided with a
 // token. It should be used when you have a lot of tokens and it wouldn't make sense to register all of them using
 // AuthorizationService's WithToken, WithTokens, WithClient or WithClients.
@@ -21,9 +27,11 @@ package g8
 //     gate := g8.NewGate(g8.NewAuthorizationService().WithClientProvider(clientProvider))
 //
 type ClientProvider struct {
-	cache bool
-
+	cache                bool
 	getClientByTokenFunc func(token string) *Client
+	gocache              *gocache.Cache
+	maxSize              int
+	ttl                  time.Duration
 }
 
 // NewClientProvider creates a ClientProvider
@@ -47,7 +55,28 @@ func NewClientProvider(getClientByTokenFunc func(token string) *Client) *ClientP
 	}
 }
 
+// WithCache adds cache options to the ClientProvider
+func (provider *ClientProvider) WithCache(ttl time.Duration, maxSize int) *ClientProvider {
+	provider.gocache = gocache.NewCache().WithEvictionPolicy(gocache.LeastRecentlyUsed).WithMaxSize(maxSize)
+	provider.gocache.StartJanitor() // Passively manage expired entries
+
+	provider.cache = true
+	provider.maxSize = maxSize
+	provider.ttl = ttl
+	return provider
+}
+
 // GetClientByToken retrieves a client by its token through the provided getClientByTokenFunc.
 func (provider *ClientProvider) GetClientByToken(token string) *Client {
-	return provider.getClientByTokenFunc(token)
+	if !provider.cache {
+		return provider.getClientByTokenFunc(token)
+	}
+
+	value, exists := provider.gocache.Get(token)
+	if !exists {
+		value = provider.getClientByTokenFunc(token)
+		provider.gocache.SetWithTTL(token, value, provider.ttl)
+	}
+
+	return value.(*Client)
 }
