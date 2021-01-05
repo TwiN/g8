@@ -52,7 +52,7 @@ func NewClientProvider(getClientByTokenFunc func(token string) *Client) *ClientP
 	}
 }
 
-// WithCache adds cache options to the ClientProvider
+// WithCache adds cache options to the ClientProvider.
 // ttl is the time until the cache entry will be deleted. A ttl of -1 means no expiration
 // maxSize is the maximum amount of entries that can be in the cache at any given time. If a value of 0 or less is provided, it means
 // infinite
@@ -67,8 +67,7 @@ func NewClientProvider(getClientByTokenFunc func(token string) *Client) *ClientP
 //         }
 //         return nil
 // 			})
-// 			clientProvider.WithCache(60*time.Minute, 70000)
-//     gate := g8.NewGate(g8.NewAuthorizationService().WithClientProvider(clientProvider))
+//     gate := g8.NewGate(g8.NewAuthorizationService().WithClientProvider(clientProvider.WithCache(60*time.Minute, 70000)))
 func (provider *ClientProvider) WithCache(ttl time.Duration, maxSize int) *ClientProvider {
 	provider.cache = gocache.NewCache().WithEvictionPolicy(gocache.LeastRecentlyUsed).WithMaxSize(maxSize)
 	provider.cache.StartJanitor() // Passively manage expired entries
