@@ -27,9 +27,8 @@ import (
 //     gate := g8.NewGate(g8.NewAuthorizationService().WithClientProvider(clientProvider))
 //
 type ClientProvider struct {
-	cache                bool
+	cache                *gocache.Cache
 	getClientByTokenFunc func(token string) *Client
-	gocache              *gocache.Cache
 	ttl                  time.Duration
 }
 
@@ -49,7 +48,6 @@ type ClientProvider struct {
 //     gate := g8.NewGate(g8.NewAuthorizationService().WithClientProvider(clientProvider))
 func NewClientProvider(getClientByTokenFunc func(token string) *Client) *ClientProvider {
 	return &ClientProvider{
-		cache:                false,
 		getClientByTokenFunc: getClientByTokenFunc,
 	}
 }
@@ -72,10 +70,9 @@ func NewClientProvider(getClientByTokenFunc func(token string) *Client) *ClientP
 // 			clientProvider.WithCache(60*time.Minute, 70000)
 //     gate := g8.NewGate(g8.NewAuthorizationService().WithClientProvider(clientProvider))
 func (provider *ClientProvider) WithCache(ttl time.Duration, maxSize int) *ClientProvider {
-	provider.gocache = gocache.NewCache().WithEvictionPolicy(gocache.LeastRecentlyUsed).WithMaxSize(maxSize)
-	provider.gocache.StartJanitor() // Passively manage expired entries
+	provider.cache = gocache.NewCache().WithEvictionPolicy(gocache.LeastRecentlyUsed).WithMaxSize(maxSize)
+	provider.cache.StartJanitor() // Passively manage expired entries
 
-	provider.cache = true
 	provider.ttl = ttl
 	return provider
 }
@@ -83,14 +80,14 @@ func (provider *ClientProvider) WithCache(ttl time.Duration, maxSize int) *Clien
 // GetClientByToken retrieves a client by its token through the provided getClientByTokenFunc.
 func (provider *ClientProvider) GetClientByToken(token string) *Client {
 	// No need to go further if cache isn't enabled
-	if !provider.cache {
+	if provider.cache == nil {
 		return provider.getClientByTokenFunc(token)
 	}
 
-	value, exists := provider.gocache.Get(token)
+	value, exists := provider.cache.Get(token)
 	if !exists {
 		value = provider.getClientByTokenFunc(token)
-		provider.gocache.SetWithTTL(token, value, provider.ttl)
+		provider.cache.SetWithTTL(token, value, provider.ttl)
 	}
 
 	return value.(*Client)
