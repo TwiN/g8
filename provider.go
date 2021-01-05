@@ -82,6 +82,7 @@ func (provider *ClientProvider) WithCache(ttl time.Duration, maxSize int) *Clien
 
 // GetClientByToken retrieves a client by its token through the provided getClientByTokenFunc.
 func (provider *ClientProvider) GetClientByToken(token string) *Client {
+	// No need to go further if cache isn't enabled
 	if !provider.cache {
 		return provider.getClientByTokenFunc(token)
 	}
