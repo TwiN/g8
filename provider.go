@@ -90,5 +90,9 @@ func (provider *ClientProvider) GetClientByToken(token string) *Client {
 		provider.cache.SetWithTTL(token, value, provider.ttl)
 	}
 
-	return value.(*Client)
+	if value != nil {
+		return value.(*Client)
+	}
+
+	return nil
 }
