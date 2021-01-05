@@ -30,7 +30,6 @@ type ClientProvider struct {
 	cache                bool
 	getClientByTokenFunc func(token string) *Client
 	gocache              *gocache.Cache
-	maxSize              int
 	ttl                  time.Duration
 }
 
@@ -56,12 +55,27 @@ func NewClientProvider(getClientByTokenFunc func(token string) *Client) *ClientP
 }
 
 // WithCache adds cache options to the ClientProvider
+// ttl is the time until the cache entry will be deleted. A ttl of -1 means no expiration
+// maxSize is the maximum amount of entries that can be in the cache at any given time. If a value of 0 or less is provided, it means
+// infinite
+//
+// Example:
+// 		 clientProvider := g8.NewClientProvider(func(token string) *g8.Client {
+//         // We'll assume that the following function calls your database and returns a struct "User" that
+//         // has the user's token as well as the permissions granted to said user
+//         user := database.GetUserByToken(token)
+//         if user != nil {
+//             return g8.NewClient(user.Token).WithPermissions(user.Permissions)
+//         }
+//         return nil
+// 			})
+// 			clientProvider.WithCache(60*time.Minute, 70000)
+//     gate := g8.NewGate(g8.NewAuthorizationService().WithClientProvider(clientProvider))
 func (provider *ClientProvider) WithCache(ttl time.Duration, maxSize int) *ClientProvider {
 	provider.gocache = gocache.NewCache().WithEvictionPolicy(gocache.LeastRecentlyUsed).WithMaxSize(maxSize)
 	provider.gocache.StartJanitor() // Passively manage expired entries
 
 	provider.cache = true
-	provider.maxSize = maxSize
 	provider.ttl = ttl
 	return provider
 }
