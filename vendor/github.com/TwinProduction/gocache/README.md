@@ -4,7 +4,7 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/TwinProduction/gocache)](https://goreportcard.com/report/github.com/TwinProduction/gocache)
 [![codecov](https://codecov.io/gh/TwinProduction/gocache/branch/master/graph/badge.svg)](https://codecov.io/gh/TwinProduction/gocache)
 [![Go version](https://img.shields.io/github/go-mod/go-version/TwinProduction/gocache.svg)](https://github.com/TwinProduction/gocache)
-[![GoDoc](https://img.shields.io/badge/godoc-reference-blue.svg)](https://godoc.org/github.com/TwinProduction/gocache)
+[![Go Reference](https://pkg.go.dev/badge/github.com/TwinProduction/gocache.svg)](https://pkg.go.dev/github.com/TwinProduction/gocache)
 
 gocache is an easy-to-use, high-performance, lightweight and thread-safe (goroutine-safe) in-memory key-value cache 
 with support for LRU and FIFO eviction policies as well as expiration, bulk operations and even persistence to file.
@@ -108,7 +108,7 @@ cache.Set("key", struct{ Text string }{Test: "value"})
 ```go
 value, exists := cache.Get("key")
 ```
-You can also get multiple entries by using `cache.GetAll([]string{"key1", "key2"})`
+You can also get multiple entries by using `cache.GetByKeys([]string{"key1", "key2"})`
 
 #### Deleting an entry
 ```go
@@ -137,8 +137,8 @@ func main() {
 
 	value, exists := cache.Get("key")
 	fmt.Printf("[Get] key=key; value=%s; exists=%v\n", value, exists)
-	for key, value := range cache.GetAll([]string{"k1", "k2", "k3"}) {
-		fmt.Printf("[GetAll] key=%s; value=%s\n", key, value)
+	for key, value := range cache.GetByKeys([]string{"k1", "k2", "k3"}) {
+		fmt.Printf("[GetByKeys] key=%s; value=%s\n", key, value)
 	}
 	for _, key := range cache.GetKeysByPattern("key*", 0) {
 		fmt.Printf("[GetKeysByPattern] key=%s\n", key)
@@ -175,9 +175,9 @@ func main() {
 
 ```
 [Get] key=key; value=value; exists=true
-[GetAll] key=k2; value=v2
-[GetAll] key=k3; value=v3
-[GetAll] key=k1; value=v1
+[GetByKeys] key=k2; value=v2
+[GetByKeys] key=k3; value=v3
+[GetByKeys] key=k1; value=v1
 [GetKeysByPattern] key=key
 [GetKeysByPattern] key=key-with-ttl
 Cache size before persisting cache to file: 5

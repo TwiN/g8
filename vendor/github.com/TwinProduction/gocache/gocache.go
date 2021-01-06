@@ -319,8 +319,11 @@ func (cache *Cache) GetAll() map[string]interface{} {
 // of the cache entry, and this function only returns the keys.
 func (cache *Cache) GetKeysByPattern(pattern string, limit int) []string {
 	var matchingKeys []string
-	cache.mutex.RLock()
-	for key := range cache.entries {
+	cache.mutex.Lock()
+	for key, value := range cache.entries {
+		if value.Expired() {
+			continue
+		}
 		if MatchPattern(pattern, key) {
 			matchingKeys = append(matchingKeys, key)
 			if limit > 0 && len(matchingKeys) >= limit {
@@ -328,7 +331,7 @@ func (cache *Cache) GetKeysByPattern(pattern string, limit int) []string {
 			}
 		}
 	}
-	cache.mutex.RUnlock()
+	cache.mutex.Unlock()
 	return matchingKeys
 }
 

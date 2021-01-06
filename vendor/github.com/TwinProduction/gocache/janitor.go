@@ -129,6 +129,8 @@ func (cache *Cache) StartJanitor() error {
 
 // StopJanitor stops the janitor
 func (cache *Cache) StopJanitor() {
-	cache.stopJanitor <- true
-	time.Sleep(100 * time.Millisecond)
+	if cache.stopJanitor != nil {
+		cache.stopJanitor <- true
+		time.Sleep(100 * time.Millisecond)
+	}
 }
