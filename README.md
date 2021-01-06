@@ -99,7 +99,26 @@ clientProvider := g8.NewClientProvider(func(token string) *g8.Client {
 gate := g8.NewGate(g8.NewAuthorizationService().WithClientProvider(clientProvider))
 ```
 
-To avoid any misunderstandings, using a client provider is not mandatory.
+You can also configure the client provider to cache the output of the function you provide to retrieve clients by token:
+```go
+clientProvider := g8.NewClientProvider(...).WithCache(ttl, maxSize)
+```
+
+Since g8 leverages [TwinProduction/gocache](https://github.com/TwinProduction/gocache), you can also use gocache's 
+constants for configuring the TTL and the maximum size:
+- Setting the TTL to `gocache.NoExpiration` (-1) will disable the TTL. 
+- Setting the maximum size to `gocache.NoMaxSize` (0) will disable the maximum cache size
+
+If you're using a TTL and have a lot of tokens (100k+), you may want to use `clientProvider.StartJanitor()` to allow 
+the cache to passively delete expired entries. If you have to re-initialize the client provider after the janitor has
+been started, make sure to stop the janitor first (`clientProvider.StopJanitor()`). This is because the janitor runs on 
+a separate goroutine, thus, if you were to re-create a client provider and re-assign it, the old client provider would 
+still exist in memory with the old cache. I'm only specifying this for completeness, because for the overwhelming 
+majority of people, the gate will be created on application start and never modified again until the application shuts
+down, in which case, you don't even need to worry about stopping the janitor.
+
+To avoid any misunderstandings, using a client provider is not mandatory. If you only have a few tokens and you can load
+them on application start, you can just leverage `AuthorizationService`'s `WithToken`/`WithTokens`/`WithClient`/`WithClients`.
 
 
 ## AuthorizationService

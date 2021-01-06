@@ -1,9 +1,15 @@
 package g8
 
 import (
+	"errors"
 	"time"
 
 	"github.com/TwinProduction/gocache"
+)
+
+var (
+	ErrNoExpiration        = errors.New("no point starting the janitor if the TTL is set to not expire")
+	ErrCacheNotInitialized = errors.New("cannot cache not configured")
 )
 
 // ClientProvider has the task of retrieving a Client from an external source (e.g. a database) when provided with a
@@ -27,9 +33,10 @@ import (
 //     gate := g8.NewGate(g8.NewAuthorizationService().WithClientProvider(clientProvider))
 //
 type ClientProvider struct {
-	cache                *gocache.Cache
 	getClientByTokenFunc func(token string) *Client
-	ttl                  time.Duration
+
+	cache *gocache.Cache
+	ttl   time.Duration
 }
 
 // NewClientProvider creates a ClientProvider
@@ -46,6 +53,7 @@ type ClientProvider struct {
 //         return nil
 //     })
 //     gate := g8.NewGate(g8.NewAuthorizationService().WithClientProvider(clientProvider))
+//
 func NewClientProvider(getClientByTokenFunc func(token string) *Client) *ClientProvider {
 	return &ClientProvider{
 		getClientByTokenFunc: getClientByTokenFunc,
@@ -53,12 +61,13 @@ func NewClientProvider(getClientByTokenFunc func(token string) *Client) *ClientP
 }
 
 // WithCache adds cache options to the ClientProvider.
-// ttl is the time until the cache entry will be deleted. A ttl of -1 means no expiration
-// maxSize is the maximum amount of entries that can be in the cache at any given time. If a value of 0 or less is provided, it means
-// infinite
+//
+// ttl is the time until the cache entry will expire. A TTL of gocache.NoExpiration (-1) means no expiration
+// maxSize is the maximum amount of entries that can be in the cache at any given time.
+// If a value of gocache.NoMaxSize (0) or less is provided for maxSize, there will be no maximum size.
 //
 // Example:
-// 		 clientProvider := g8.NewClientProvider(func(token string) *g8.Client {
+//     clientProvider := g8.NewClientProvider(func(token string) *g8.Client {
 //         // We'll assume that the following function calls your database and returns a struct "User" that
 //         // has the user's token as well as the permissions granted to said user
 //         user := database.GetUserByToken(token)
@@ -66,30 +75,56 @@ func NewClientProvider(getClientByTokenFunc func(token string) *Client) *ClientP
 //             return g8.NewClient(user.Token).WithPermissions(user.Permissions)
 //         }
 //         return nil
-// 			})
-//     gate := g8.NewGate(g8.NewAuthorizationService().WithClientProvider(clientProvider.WithCache(60*time.Minute, 70000)))
+//     })
+//     gate := g8.NewGate(g8.NewAuthorizationService().WithClientProvider(clientProvider.WithCache(time.Hour, 70000)))
+//
 func (provider *ClientProvider) WithCache(ttl time.Duration, maxSize int) *ClientProvider {
 	provider.cache = gocache.NewCache().WithEvictionPolicy(gocache.LeastRecentlyUsed).WithMaxSize(maxSize)
-	provider.cache.StartJanitor() // Passively manage expired entries
-
 	provider.ttl = ttl
 	return provider
 }
 
+// StartCacheJanitor starts the cache janitor, which passively deletes expired cache entries in the background.
+//
+// Not really necessary unless you have a lot of clients (100000+).
+//
+// Even without the janitor, active eviction will still happen (i.e. when GetClientByToken is called, but the cache
+// entry for the given token has expired, the cache entry will be automatically deleted and re-fetched from the
+// user-defined getClientByTokenFunc)
+func (provider *ClientProvider) StartCacheJanitor() error {
+	if provider.cache == nil {
+		// Can't start the cache janitor if there's no cache
+		return ErrCacheNotInitialized
+	}
+	if provider.ttl != gocache.NoExpiration {
+		return provider.cache.StartJanitor()
+	}
+	return ErrNoExpiration
+}
+
+// StopCacheJanitor stops the cache janitor
+//
+// Not required unless your application initializes multiple providers over the course of its lifecycle.
+// In English, that means if you initialize a ClientProvider only once on application start and it stays up
+// until your application shuts down, you don't need to call this function.
+func (provider *ClientProvider) StopCacheJanitor() {
+	if provider.cache != nil {
+		provider.cache.StopJanitor()
+	}
+}
+
 // GetClientByToken retrieves a client by its token through the provided getClientByTokenFunc.
 func (provider *ClientProvider) GetClientByToken(token string) *Client {
-	// No need to go further if cache isn't enabled
 	if provider.cache == nil {
 		return provider.getClientByTokenFunc(token)
 	}
-
-	if value, exists := provider.cache.Get(token); value != nil && exists {
-		return value.(*Client)
+	if client, exists := provider.cache.Get(token); exists {
+		if client == nil {
+			return nil
+		}
+		return client.(*Client)
 	}
-
-	// Entry not cached yet
 	client := provider.getClientByTokenFunc(token)
 	provider.cache.SetWithTTL(token, client, provider.ttl)
-
 	return client
 }
