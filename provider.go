@@ -83,15 +83,12 @@ func (provider *ClientProvider) GetClientByToken(token string) *Client {
 		return provider.getClientByTokenFunc(token)
 	}
 
-	value, exists := provider.cache.Get(token)
-	if !exists {
-		value = provider.getClientByTokenFunc(token)
-		provider.cache.SetWithTTL(token, value, provider.ttl)
-	}
-
-	if value != nil {
+	if value, exists := provider.cache.Get(token); value != nil && exists {
 		return value.(*Client)
 	}
 
-	return nil
+	client := provider.getClientByTokenFunc(token)
+	provider.cache.SetWithTTL(token, client, provider.ttl)
+
+	return client
 }
