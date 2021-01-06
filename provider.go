@@ -87,6 +87,7 @@ func (provider *ClientProvider) GetClientByToken(token string) *Client {
 		return value.(*Client)
 	}
 
+	// Entry not cached yet
 	client := provider.getClientByTokenFunc(token)
 	provider.cache.SetWithTTL(token, client, provider.ttl)
 
