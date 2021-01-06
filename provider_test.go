@@ -90,3 +90,19 @@ func TestClientProvider_WithCacheAndJanitor(t *testing.T) {
 	}
 	provider.StopCacheJanitor()
 }
+
+func TestClientProvider_StartCacheJanitorWhenTTLSetToNoExpiration(t *testing.T) {
+	provider := NewClientProvider(getClientByTokenFunc).WithCache(gocache.NoExpiration, 10)
+	err := provider.StartCacheJanitor()
+	if err != ErrNoExpiration {
+		t.Error("expected provider.StartCacheJanitor() to return ErrNoExpiration, got", err)
+	}
+}
+
+func TestClientProvider_StartCacheJanitorWhenCacheNotInitialized(t *testing.T) {
+	provider := NewClientProvider(getClientByTokenFunc)
+	err := provider.StartCacheJanitor()
+	if err != ErrCacheNotInitialized {
+		t.Error("expected provider.StartCacheJanitor() to return ErrCacheNotInitialized, got", err)
+	}
+}
