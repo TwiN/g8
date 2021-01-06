@@ -88,8 +88,16 @@ func (cache *Cache) EvictionPolicy() EvictionPolicy {
 }
 
 // Stats returns statistics from the cache
-func (cache *Cache) Stats() *Statistics {
-	return cache.stats
+func (cache *Cache) Stats() Statistics {
+	cache.mutex.RLock()
+	stats := Statistics{
+		EvictedKeys: cache.stats.EvictedKeys,
+		ExpiredKeys: cache.stats.ExpiredKeys,
+		Hits:        cache.stats.Hits,
+		Misses:      cache.stats.Misses,
+	}
+	cache.mutex.RUnlock()
+	return stats
 }
 
 // MemoryUsage returns the current memory usage of the cache's dataset in bytes

@@ -109,7 +109,7 @@ func (cache *Cache) StartJanitor() error {
 				}
 				cache.mutex.Unlock()
 			case <-cache.stopJanitor:
-				cache.stopJanitor = nil
+				cache.stopJanitor <- true
 				return
 			}
 		}
@@ -130,7 +130,11 @@ func (cache *Cache) StartJanitor() error {
 // StopJanitor stops the janitor
 func (cache *Cache) StopJanitor() {
 	if cache.stopJanitor != nil {
+		// Tell the janitor to stop, and then wait for the janitor to reply on the same channel that it's stopping
+		// This may seem a bit odd, but this allows us to avoid a data race condition in which setting cache.stopJanitor
+		// to nil
 		cache.stopJanitor <- true
-		time.Sleep(100 * time.Millisecond)
+		<-cache.stopJanitor
+		cache.stopJanitor = nil
 	}
 }

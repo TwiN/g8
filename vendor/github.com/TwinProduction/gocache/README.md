@@ -26,6 +26,7 @@ with support for LRU and FIFO eviction policies as well as expiration, bulk oper
 - [Eviction](#eviction)
   - [MaxSize](#maxsize)
   - [MaxMemoryUsage](#maxmemoryusage)
+- [Expiration](#expiration)
 - [Server](#server)
 - [Running the server with Docker](#running-the-server-with-docker)
 - [Performance](#performance)
@@ -249,16 +250,6 @@ you'll be fine.
 
 
 ## Eviction
-Before getting into the options that determine when an eviction is triggered, you may want to be aware that there are
-two ways that eviction can take place:
-- Active eviction
-- Passive eviction
-
-**Active eviction** happens when an attempt is made to access the value of a cache entry that expired. `Get`, 
-`GetByKeys` and `GetAll` are the only functions that trigger active eviction.
-
-**Passive eviction** runs in the background and is managed by the janitor. If you do not start the janitor, there will 
-be no passive eviction.
 
 ### MaxSize
 Eviction by MaxSize is the default behavior, and is also the most efficient.
@@ -294,6 +285,20 @@ As previously mentioned, this is a work in progress, and here's a list of the th
 - The memory usage of structs are a gross estimation and may not reflect the actual memory usage.
 - Native types (string, int, bool, []byte, etc.) are the most accurate for calculating the memory usage.
 - Adding an entry bigger than the configured MaxMemoryUsage will work, but it will evict all other entries.
+
+
+## Expiration
+There are two ways that the deletion of expired keys can take place:
+- Active
+- Passive
+
+**Active deletion of expired keys** happens when an attempt is made to access the value of a cache entry that expired. 
+`Get`, `GetByKeys` and `GetAll` are the only functions that can trigger active deletion of expired keys.
+
+**Passive deletion of expired keys** runs in the background and is managed by the janitor. 
+If you do not start the janitor, there will be no passive deletion of expired keys.
+
+
 
 
 ## Server
