@@ -248,12 +248,13 @@ func (cache *Cache) Get(key string) (interface{}, bool) {
 		cache.stats.Misses++
 		return nil, false
 	}
-	cache.stats.Hits++
 	if entry.Expired() {
+		cache.stats.ExpiredKeys++
 		cache.delete(key)
 		cache.mutex.Unlock()
 		return nil, false
 	}
+	cache.stats.Hits++
 	if cache.evictionPolicy == LeastRecentlyUsed {
 		entry.Accessed()
 		if cache.head == entry {

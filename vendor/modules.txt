@@ -1,4 +1,4 @@
-# github.com/TwinProduction/gocache v0.4.1
+# github.com/TwinProduction/gocache v0.4.2
 ## explicit
 github.com/TwinProduction/gocache
 # github.com/boltdb/bolt v1.3.1
