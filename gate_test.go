@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 )
 
 const (
@@ -101,6 +102,21 @@ func TestGate_ProtectWithValidToken(t *testing.T) {
 
 func TestGate_ProtectWithValidTokenExposedThroughClientProvider(t *testing.T) {
 	gate := NewGate(NewAuthorizationService().WithClientProvider(mockClientProvider))
+	request, _ := http.NewRequest("GET", "/handle", nil)
+	request.Header.Add("Authorization", fmt.Sprintf("Bearer %s", TestProviderToken))
+	responseRecorder := httptest.NewRecorder()
+
+	router := http.NewServeMux()
+	router.Handle("/handle", gate.Protect(&testHandler{}))
+	router.ServeHTTP(responseRecorder, request)
+
+	if responseRecorder.Code != http.StatusOK {
+		t.Errorf("%s %s should have returned %d, but returned %d instead", request.Method, request.URL, http.StatusOK, responseRecorder.Code)
+	}
+}
+
+func TestGate_ProtectWithValidTokenExposedThroughClientProviderWithCache(t *testing.T) {
+	gate := NewGate(NewAuthorizationService().WithClientProvider(mockClientProvider.WithCache(60*time.Minute, 70000)))
 	request, _ := http.NewRequest("GET", "/handle", nil)
 	request.Header.Add("Authorization", fmt.Sprintf("Bearer %s", TestProviderToken))
 	responseRecorder := httptest.NewRecorder()
