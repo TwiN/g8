@@ -123,6 +123,7 @@ func (authorizationService *AuthorizationService) IsAuthorized(token string, per
 	return false
 }
 
+// extractTokenFromRequest extracts the bearer token from the AuthorizationHeader
 func (authorizationService *AuthorizationService) extractTokenFromRequest(request *http.Request) string {
 	return strings.TrimPrefix(request.Header.Get(AuthorizationHeader), "Bearer ")
 }
