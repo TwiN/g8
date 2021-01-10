@@ -44,7 +44,7 @@ If you use `http.HandleFunc` instead of `http.Handle`, you may use `gate.Protect
 
 ### Advanced permissions
 
-If you have tokens with more permissions that others, g8's permission system will make managing authorization a breeze.
+If you have tokens with more permissions than others, g8's permission system will make managing authorization a breeze.
 
 Rather than registering tokens, think of it as registering clients, the only difference being that clients may be 
 configured with permissions while tokens cannot. 
