@@ -52,6 +52,9 @@ func TestClientProvider_WithCache(t *testing.T) {
 	if client := provider.GetClientByToken("invalid-token"); client != nil {
 		t.Error("expected nil, got", client)
 	}
+	if client := provider.GetClientByToken("invalid-token"); client != nil {
+		t.Error("should've returned nil (cached)")
+	}
 }
 
 func TestClientProvider_WithCacheAndExpiration(t *testing.T) {
