@@ -2,6 +2,7 @@ package gocache
 
 import (
 	"errors"
+	"reflect"
 	"sync"
 	"time"
 )
@@ -69,6 +70,15 @@ type Cache struct {
 
 	// memoryUsage is the approximate memory usage of the cache (dataset only) in bytes
 	memoryUsage int
+
+	// forceNilInterfaceOnNilPointer determines whether all Set-like functions should set a value as nil if the
+	// interface passed has a nil value but not a nil type.
+	//
+	// By default, interfaces are only nil when both their type and value is nil.
+	// This means that when you pass a pointer to a nil value, the type of the interface
+	// will still show as nil, which means that if you don't cast the interface after
+	// retrieving it, a nil check will return that the value is not false.
+	forceNilInterfaceOnNilPointer bool
 }
 
 // MaxSize returns the maximum amount of keys that can be present in the cache before
@@ -139,20 +149,62 @@ func (cache *Cache) WithEvictionPolicy(policy EvictionPolicy) *Cache {
 	return cache
 }
 
+// WithForceNilInterfaceOnNilPointer sets whether all Set-like functions should set a value as nil if the
+// interface passed has a nil value but not a nil type.
+//
+// In Go, an interface is only nil if both its type and value are nil, which means that a nil pointer
+// (e.g. (*Struct)(nil)) will retain its attribution to the type, and the unmodified value returned from
+// Cache.Get, for instance, would return false when compared with nil if this option is set to false.
+//
+// We can bypass this by detecting if the interface's value is nil and setting it to nil rather than
+// a nil pointer, which will make the value returned from Cache.Get return true when compared with nil.
+// This is exactly what passing true to WithForceNilInterfaceOnNilPointer does, and it's also the default behavior.
+//
+// Alternatively, you may pass false to WithForceNilInterfaceOnNilPointer, which will mean that you'll have
+// to cast the value returned from Cache.Get to its original type to check for whether the pointer returned
+// is nil or not.
+//
+// If set to true:
+//     cache := gocache.NewCache().WithForceNilInterfaceOnNilPointer(true)
+//     cache.Set("key", (*Struct)(nil))
+//     value, _ := cache.Get("key")
+//     // the following returns true, because the interface{} was forcefully set to nil
+//     if value == nil {}
+//     // the following will panic, because the value has been casted to its type
+//     if value.(*Struct) == nil {}
+//
+// If set to false:
+//     cache := gocache.NewCache().WithForceNilInterfaceOnNilPointer(false)
+//     cache.Set("key", (*Struct)(nil))
+//     value, _ := cache.Get("key")
+//     // the following returns false, because the interface{} returned has a non-nil type (*Struct)
+//     if value == nil {}
+//     // the following returns true, because the value has been casted to its type
+//     if value.(*Struct) == nil {}
+//
+// In other words, if set to true, you do not need to cast the value returned from the cache to
+// to check if the value is nil.
+//
+// Defaults to true
+func (cache *Cache) WithForceNilInterfaceOnNilPointer(forceNilInterfaceOnNilPointer bool) *Cache {
+	cache.forceNilInterfaceOnNilPointer = forceNilInterfaceOnNilPointer
+	return cache
+}
+
 // NewCache creates a new Cache
 //
 // Should be used in conjunction with Cache.WithMaxSize, Cache.WithMaxMemoryUsage and/or Cache.WithEvictionPolicy
-//
 //     gocache.NewCache().WithMaxSize(10000).WithEvictionPolicy(gocache.LeastRecentlyUsed)
 //
 func NewCache() *Cache {
 	return &Cache{
-		maxSize:        DefaultMaxSize,
-		evictionPolicy: FirstInFirstOut,
-		stats:          &Statistics{},
-		entries:        make(map[string]*Entry),
-		mutex:          sync.RWMutex{},
-		stopJanitor:    nil,
+		maxSize:                       DefaultMaxSize,
+		evictionPolicy:                FirstInFirstOut,
+		stats:                         &Statistics{},
+		entries:                       make(map[string]*Entry),
+		mutex:                         sync.RWMutex{},
+		stopJanitor:                   nil,
+		forceNilInterfaceOnNilPointer: true,
 	}
 }
 
@@ -166,6 +218,12 @@ func (cache *Cache) Set(key string, value interface{}) {
 // The TTL provided must be greater than 0, or NoExpiration (-1). If a negative value that isn't -1 (NoExpiration) is
 // provided, the entry will not be created if the key doesn't exist
 func (cache *Cache) SetWithTTL(key string, value interface{}, ttl time.Duration) {
+	// An interface is only nil if both its value and its type are nil, however, passing a pointer
+	if cache.forceNilInterfaceOnNilPointer {
+		if value != nil && (reflect.ValueOf(value).Kind() == reflect.Ptr && reflect.ValueOf(value).IsNil()) {
+			value = nil
+		}
+	}
 	cache.mutex.Lock()
 	entry, ok := cache.get(key)
 	if !ok {
