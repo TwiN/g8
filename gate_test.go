@@ -100,6 +100,30 @@ func TestGate_ProtectWithValidToken(t *testing.T) {
 	}
 }
 
+func TestGate_ProtectMultipleTimes(t *testing.T) {
+	gate := NewGate(NewAuthorizationService().WithToken("good-token"))
+	request, _ := http.NewRequest("GET", "/handle", nil)
+	request.Header.Add("Authorization", fmt.Sprintf("Bearer %s", "good-token"))
+	badRequest, _ := http.NewRequest("GET", "/handle", nil)
+	badRequest.Header.Add("Authorization", fmt.Sprintf("Bearer %s", "bad-token"))
+
+	router := http.NewServeMux()
+	router.Handle("/handle", gate.Protect(&testHandler{}))
+
+	for i := 0; i < 100; i++ {
+		responseRecorder := httptest.NewRecorder()
+		router.ServeHTTP(responseRecorder, request)
+		if responseRecorder.Code != http.StatusOK {
+			t.Errorf("%s %s should have returned %d, but returned %d instead", request.Method, request.URL, http.StatusOK, responseRecorder.Code)
+		}
+		responseRecorder = httptest.NewRecorder()
+		router.ServeHTTP(responseRecorder, badRequest)
+		if responseRecorder.Code != http.StatusUnauthorized {
+			t.Errorf("%s %s should have returned %d, but returned %d instead", badRequest.Method, badRequest.URL, http.StatusOK, responseRecorder.Code)
+		}
+	}
+}
+
 func TestGate_ProtectWithValidTokenExposedThroughClientProvider(t *testing.T) {
 	gate := NewGate(NewAuthorizationService().WithClientProvider(mockClientProvider))
 	request, _ := http.NewRequest("GET", "/handle", nil)
