@@ -6,9 +6,9 @@
 [![Go version](https://img.shields.io/github/go-mod/go-version/TwinProduction/g8.svg)](https://github.com/TwinProduction/g8)
 [![Go Reference](https://pkg.go.dev/badge/github.com/TwinProduction/g8.svg)](https://pkg.go.dev/github.com/TwinProduction/g8)
 
-G8, pronounced Gate, is a simple Go library for protecting HTTP handlers with tokens.
+g8, pronounced gate, is a simple Go library for protecting HTTP handlers with tokens.
 
-Tired of constantly re-implementing a security layer for each of applications? Me too, that's why I made G8.
+Tired of constantly re-implementing a security layer for each of applications? Me too, that's why I made g8.
 
 
 ## Installation
@@ -20,7 +20,7 @@ go get -u github.com/TwinProduction/g8
 
 ## Usage
 
-Because the entire purpose of G8 is to NOT waste time configuring the layer of security, the primary emphasis is to 
+Because the entire purpose of g8 is to NOT waste time configuring the layer of security, the primary emphasis is to 
 keep it as simple as possible.
 
 
