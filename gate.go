@@ -116,6 +116,6 @@ func (gate *Gate) ProtectFuncWithPermissions(handlerFunc http.HandlerFunc, permi
 // slice of permissions
 //
 // See ProtectFuncWithPermissions for further documentation
-func (gate *Gate) ProtectFuncWithPermission(handlerFunc http.HandlerFunc, permission string) http.Handler {
+func (gate *Gate) ProtectFuncWithPermission(handlerFunc http.HandlerFunc, permission string) http.HandlerFunc {
 	return gate.ProtectFuncWithPermissions(handlerFunc, []string{permission})
 }
