@@ -13,7 +13,7 @@ const (
 	DefaultUnauthorizedResponseBody = "Authorization Bearer token is missing or invalid"
 )
 
-// Gate is the front door to your API which opens the door only to those with the key
+// Gate is lock to the front door of your API, letting only those you allow through.
 type Gate struct {
 	authorizationService     *AuthorizationService
 	unauthorizedResponseBody []byte
