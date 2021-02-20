@@ -341,7 +341,7 @@ func TestGate_ProtectFuncWithPermissionWhenClientHasSufficientPermissions(t *tes
 	responseRecorder := httptest.NewRecorder()
 
 	router := http.NewServeMux()
-	router.Handle("/handle", gate.ProtectFunc(testHandlerFunc))
+	router.HandleFunc("/handle", gate.ProtectFuncWithPermission(testHandlerFunc, "admin"))
 	router.ServeHTTP(responseRecorder, request)
 
 	// Since the client registered directly in the AuthorizationService has the permission "admin" and the testHandler
@@ -358,7 +358,7 @@ func TestGate_ProtectFuncWithPermissionWhenClientHasInsufficientPermissions(t *t
 	responseRecorder := httptest.NewRecorder()
 
 	router := http.NewServeMux()
-	router.Handle("/handle", gate.ProtectFuncWithPermission(testHandlerFunc, "admin"))
+	router.HandleFunc("/handle", gate.ProtectFuncWithPermission(testHandlerFunc, "admin"))
 	router.ServeHTTP(responseRecorder, request)
 
 	// Since the client registered directly in the AuthorizationService has the permission "mod" and the
