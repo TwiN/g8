@@ -8,7 +8,13 @@ import (
 )
 
 var (
-	ErrNoExpiration        = errors.New("no point starting the janitor if the TTL is set to not expire")
+	// ErrNoExpiration is the error returned by ClientProvider.StartCacheJanitor if there was an attempt to start the
+	// janitor despite no expiration being configured.
+	// To clarify, this is because the cache janitor is only useful when an expiration is set.
+	ErrNoExpiration = errors.New("no point starting the janitor if the TTL is set to not expire")
+
+	// ErrCacheNotInitialized is the error returned by ClientProvider.StartCacheJanitor if there was an attempt to start
+	// the janitor despite the cache not having been initialized using ClientProvider.WithCache
 	ErrCacheNotInitialized = errors.New("cannot cache not configured")
 )
 

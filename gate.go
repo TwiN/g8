@@ -5,10 +5,15 @@ import (
 )
 
 const (
-	AuthorizationHeader             = "Authorization"
+	// AuthorizationHeader is the header in which g8 looks for the authorization bearer token
+	AuthorizationHeader = "Authorization"
+
+	// DefaultUnauthorizedResponseBody is the default response body returned if a request was sent with a missing or
+	// invalid token
 	DefaultUnauthorizedResponseBody = "Authorization Bearer token is missing or invalid"
 )
 
+// Gate is the front door to your API which opens the door only to those with the key
 type Gate struct {
 	authorizationService     *AuthorizationService
 	unauthorizedResponseBody []byte
