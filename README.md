@@ -12,20 +12,17 @@ Tired of constantly re-implementing a security layer for each of applications? M
 
 
 ## Installation
-
 ```
 go get -u github.com/TwinProduction/g8
 ```
 
 
 ## Usage
-
 Because the entire purpose of g8 is to NOT waste time configuring the layer of security, the primary emphasis is to 
 keep it as simple as possible.
 
 
 ### Simple
-
 Just want a simple layer of security without the need for advanced permissions? This configuration is what you're
 looking for.
 
@@ -43,7 +40,6 @@ If you use `http.HandleFunc` instead of `http.Handle`, you may use `gate.Protect
 
 
 ### Advanced permissions
-
 If you have tokens with more permissions than others, g8's permission system will make managing authorization a breeze.
 
 Rather than registering tokens, think of it as registering clients, the only difference being that clients may be 
@@ -78,7 +74,6 @@ gate := g8.NewGate(g8.NewAuthorizationService().WithClient(g8.NewClient("mytoken
 
 
 ### With client provider
-
 A client provider's task is to retrieve a Client from an external source (e.g. a database) when provided with a token.
 You should use a client provider when you have a lot of tokens and it wouldn't make sense to register all of them using
 `AuthorizationService`'s `WithToken`/`WithTokens`/`WithClient`/`WithClients`.
@@ -122,7 +117,6 @@ them on application start, you can just leverage `AuthorizationService`'s `WithT
 
 
 ## AuthorizationService
-
 As the previous examples may have hinted, there are several ways to create clients. The one thing they have
 in common is that they all go through AuthorizationService, which is in charge of both managing clients and determining
 whether a request should be blocked or allowed through.
@@ -150,7 +144,6 @@ Be aware that g8.Client supports a list of permissions as well. You may call `Wi
 
 
 ### Permissions
-
 Unlike client permissions, handler permissions are requirements.
 
 A client may have as many permissions as you want, but for said client to have access to a handler protected by
