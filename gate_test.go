@@ -385,3 +385,17 @@ func TestGate_WithCustomUnauthorizedResponseBody(t *testing.T) {
 		t.Errorf("%s %s should have returned %s, but returned %s instead", request.Method, request.URL, "test", string(responseBody))
 	}
 }
+
+func TestGate_ProtectWithNilAuthorizationService(t *testing.T) {
+	gate := NewGate(nil)
+	request, _ := http.NewRequest("GET", "/handle", nil)
+	responseRecorder := httptest.NewRecorder()
+
+	router := http.NewServeMux()
+	router.Handle("/handle", gate.Protect(&testHandler{}))
+	router.ServeHTTP(responseRecorder, request)
+
+	if responseRecorder.Code != http.StatusOK {
+		t.Errorf("%s %s should have returned %d, but returned %d instead", request.Method, request.URL, http.StatusOK, responseRecorder.Code)
+	}
+}
