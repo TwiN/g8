@@ -1,19 +1,18 @@
 package g8
 
-import (
-	"net/http"
-)
+import "net/http"
 
 const (
-	// AuthorizationHeader is the header in which g8 looks for the authorization bearer token
+	//yes, const is just declared here similar to a dsa body
+	// AuthorizationHeader = the header in which g8 looks for the authorization bearer token
 	AuthorizationHeader = "Authorization"
 
-	// DefaultUnauthorizedResponseBody is the default response body returned if a request was sent with a missing or
+	// DefaultUnauthorizedResponseBody = the default response body returned if a request was sent with a missing or
 	// invalid token
 	DefaultUnauthorizedResponseBody = "Authorization Bearer token is missing or invalid"
 )
 
-// Gate is lock to the front door of your API, letting only those you allow through.
+// Gate = lock to the front door of your API, letting only those you allow through.
 type Gate struct {
 	authorizationService     *AuthorizationService
 	unauthorizedResponseBody []byte
@@ -27,13 +26,13 @@ func NewGate(authorizationService *AuthorizationService) *Gate {
 	}
 }
 
-// WithCustomUnauthorizedResponseBody sets a custom response body when Gate determines that a request must be blocked
+// WithCustomUnauthorizedResponseBody = a custom response body when Gate determines that a request must be blocked
 func (gate *Gate) WithCustomUnauthorizedResponseBody(unauthorizedResponseBody []byte) *Gate {
 	gate.unauthorizedResponseBody = unauthorizedResponseBody
 	return gate
 }
 
-// Protect secures a handler, requiring requests going through to have a valid Authorization Bearer token.
+// Protect = secured handler, requiring requests going through to have a valid Authorization Bearer token.
 // Unlike ProtectWithPermissions, Protect will allow access to any registered tokens, regardless of their permissions
 // or lack thereof.
 //
