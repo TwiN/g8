@@ -2,6 +2,7 @@ package g8
 
 import (
 	"net/http"
+	"strings"
 )
 
 const (
@@ -18,6 +19,9 @@ type Gate struct {
 	authorizationService     *AuthorizationService
 	unauthorizedResponseBody []byte
 }
+
+// TODO: Add rate limiting support (per gate)
+// e.g. .WithIndependentRateLimitingService(maximumNumberOfRequestsPerSecond) / .WithGlobalRateLimitingService(maximumNumberOfRequestsPerSecond)
 
 // NewGate creates a new Gate.
 func NewGate(authorizationService *AuthorizationService) *Gate {
@@ -106,7 +110,7 @@ func (gate *Gate) ProtectFunc(handlerFunc http.HandlerFunc) http.HandlerFunc {
 func (gate *Gate) ProtectFuncWithPermissions(handlerFunc http.HandlerFunc, permissions []string) http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		if gate.authorizationService != nil {
-			token := gate.authorizationService.extractTokenFromRequest(request)
+			token := extractTokenFromRequest(request)
 			if !gate.authorizationService.IsAuthorized(token, permissions) {
 				writer.WriteHeader(http.StatusUnauthorized)
 				_, _ = writer.Write(gate.unauthorizedResponseBody)
@@ -123,4 +127,9 @@ func (gate *Gate) ProtectFuncWithPermissions(handlerFunc http.HandlerFunc, permi
 // See ProtectFuncWithPermissions for further documentation
 func (gate *Gate) ProtectFuncWithPermission(handlerFunc http.HandlerFunc, permission string) http.HandlerFunc {
 	return gate.ProtectFuncWithPermissions(handlerFunc, []string{permission})
+}
+
+// extractTokenFromRequest extracts the bearer token from the AuthorizationHeader
+func extractTokenFromRequest(request *http.Request) string {
+	return strings.TrimPrefix(request.Header.Get(AuthorizationHeader), "Bearer ")
 }

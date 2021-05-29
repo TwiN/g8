@@ -1,8 +1,6 @@
 package g8
 
 import (
-	"net/http"
-	"strings"
 	"sync"
 )
 
@@ -121,9 +119,4 @@ func (authorizationService *AuthorizationService) IsAuthorized(token string, per
 		return client.HasPermissions(permissionsRequired)
 	}
 	return false
-}
-
-// extractTokenFromRequest extracts the bearer token from the AuthorizationHeader
-func (authorizationService *AuthorizationService) extractTokenFromRequest(request *http.Request) string {
-	return strings.TrimPrefix(request.Header.Get(AuthorizationHeader), "Bearer ")
 }
