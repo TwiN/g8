@@ -20,9 +20,6 @@ type Gate struct {
 	unauthorizedResponseBody []byte
 }
 
-// TODO: Add rate limiting support (per gate)
-// e.g. .WithIndependentRateLimitingService(maximumNumberOfRequestsPerSecond) / .WithGlobalRateLimitingService(maximumNumberOfRequestsPerSecond)
-
 // NewGate creates a new Gate.
 func NewGate(authorizationService *AuthorizationService) *Gate {
 	return &Gate{
