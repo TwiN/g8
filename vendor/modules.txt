@@ -1,4 +1,4 @@
-# github.com/TwinProduction/gocache v1.2.1
+# github.com/TwinProduction/gocache v1.2.2
 ## explicit
 github.com/TwinProduction/gocache
 # go.etcd.io/bbolt v1.3.5
