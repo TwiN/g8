@@ -5,7 +5,7 @@
 [![codecov](https://codecov.io/gh/TwinProduction/g8/branch/master/graph/badge.svg)](https://codecov.io/gh/TwinProduction/g8)
 [![Go version](https://img.shields.io/github/go-mod/go-version/TwinProduction/g8.svg)](https://github.com/TwinProduction/g8)
 [![Go Reference](https://pkg.go.dev/badge/github.com/TwinProduction/g8.svg)](https://pkg.go.dev/github.com/TwinProduction/g8)
-<!-- [![Join Discord server](https://img.shields.io/discord/442432928614449155.svg?label=&logo=discord&logoColor=ffffff&color=7389D8&labelColor=6A7EC2)](https://discord.gg/44p4TRep) -->
+[![Follow TwinProduction](https://img.shields.io/github/followers/TwinProduction?label=Follow&style=social)](https://github.com/TwinProduction)
 
 g8, pronounced gate, is a simple Go library for protecting HTTP handlers with tokens.
 
