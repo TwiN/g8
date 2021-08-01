@@ -399,3 +399,37 @@ func TestGate_ProtectWithNilAuthorizationService(t *testing.T) {
 		t.Errorf("%s %s should have returned %d, but returned %d instead", request.Method, request.URL, http.StatusOK, responseRecorder.Code)
 	}
 }
+
+func TestGate_ProtectWithNilAuthorizationServiceAndRateLimit(t *testing.T) {
+	gate := NewGate(nil).WithRateLimit(2)
+	request, _ := http.NewRequest("GET", "/handle", nil)
+	router := http.NewServeMux()
+	router.Handle("/handle", gate.Protect(&testHandler{}))
+
+	responseRecorder := httptest.NewRecorder()
+	router.ServeHTTP(responseRecorder, request)
+	if responseRecorder.Code != http.StatusOK {
+		t.Errorf("%s %s should have returned %d, but returned %d instead", request.Method, request.URL, http.StatusOK, responseRecorder.Code)
+	}
+
+	responseRecorder = httptest.NewRecorder()
+	router.ServeHTTP(responseRecorder, request)
+	if responseRecorder.Code != http.StatusOK {
+		t.Errorf("%s %s should have returned %d, but returned %d instead", request.Method, request.URL, http.StatusOK, responseRecorder.Code)
+	}
+
+	responseRecorder = httptest.NewRecorder()
+	router.ServeHTTP(responseRecorder, request)
+	if responseRecorder.Code != http.StatusTooManyRequests {
+		t.Errorf("%s %s should have returned %d, but returned %d instead", request.Method, request.URL, http.StatusTooManyRequests, responseRecorder.Code)
+	}
+
+	// Wait for rate limit time window to pass
+	time.Sleep(time.Second)
+
+	responseRecorder = httptest.NewRecorder()
+	router.ServeHTTP(responseRecorder, request)
+	if responseRecorder.Code != http.StatusOK {
+		t.Errorf("%s %s should have returned %d, but returned %d instead", request.Method, request.URL, http.StatusOK, responseRecorder.Code)
+	}
+}

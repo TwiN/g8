@@ -9,28 +9,40 @@ const (
 	// AuthorizationHeader is the header in which g8 looks for the authorization bearer token
 	AuthorizationHeader = "Authorization"
 
-	// DefaultUnauthorizedResponseBody is the default response body returned if a request was sent with a missing or
-	// invalid token
+	// DefaultUnauthorizedResponseBody is the default response body returned if a request was sent with a missing or invalid token
 	DefaultUnauthorizedResponseBody = "Authorization Bearer token is missing or invalid"
+
+	// DefaultTooManyRequestsResponseBody is the default response body returned if a request exceeded the allowed rate limit
+	DefaultTooManyRequestsResponseBody = "Too Many Requests"
 )
 
 // Gate is lock to the front door of your API, letting only those you allow through.
 type Gate struct {
 	authorizationService     *AuthorizationService
 	unauthorizedResponseBody []byte
+
+	rateLimiter                 *RateLimiter
+	tooManyRequestsResponseBody []byte
 }
 
 // NewGate creates a new Gate.
 func NewGate(authorizationService *AuthorizationService) *Gate {
 	return &Gate{
-		unauthorizedResponseBody: []byte(DefaultUnauthorizedResponseBody),
-		authorizationService:     authorizationService,
+		authorizationService:        authorizationService,
+		unauthorizedResponseBody:    []byte(DefaultUnauthorizedResponseBody),
+		tooManyRequestsResponseBody: []byte(DefaultTooManyRequestsResponseBody),
 	}
 }
 
 // WithCustomUnauthorizedResponseBody sets a custom response body when Gate determines that a request must be blocked
 func (gate *Gate) WithCustomUnauthorizedResponseBody(unauthorizedResponseBody []byte) *Gate {
 	gate.unauthorizedResponseBody = unauthorizedResponseBody
+	return gate
+}
+
+// WithRateLimit adds rate limiting to the Gate
+func (gate *Gate) WithRateLimit(maximumRequestsPerSecond int) *Gate {
+	gate.rateLimiter = NewRateLimiter(maximumRequestsPerSecond)
 	return gate
 }
 
@@ -106,6 +118,13 @@ func (gate *Gate) ProtectFunc(handlerFunc http.HandlerFunc) http.HandlerFunc {
 //
 func (gate *Gate) ProtectFuncWithPermissions(handlerFunc http.HandlerFunc, permissions []string) http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
+		if gate.rateLimiter != nil {
+			if !gate.rateLimiter.Try() {
+				writer.WriteHeader(http.StatusTooManyRequests)
+				_, _ = writer.Write(gate.tooManyRequestsResponseBody)
+				return
+			}
+		}
 		if gate.authorizationService != nil {
 			token := extractTokenFromRequest(request)
 			if !gate.authorizationService.IsAuthorized(token, permissions) {

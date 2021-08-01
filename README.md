@@ -166,3 +166,9 @@ have the `backup` permission:
 ```go
 router.Handle("/backup", gate.ProtectWithPermissions(&testHandler{}, []string{"read", "backup"}))
 ```
+
+## Rate limiting
+To add a rate limit of 100 requests per second:
+```
+gate := g8.NewGate(nil).WithRateLimit(100)
+```
