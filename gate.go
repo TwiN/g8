@@ -41,6 +41,10 @@ func (gate *Gate) WithCustomUnauthorizedResponseBody(unauthorizedResponseBody []
 }
 
 // WithRateLimit adds rate limiting to the Gate
+//
+// If you just want to use a gate for rate limiting purposes:
+//    gate := g8.NewGate(nil).WithRateLimit(50)
+//
 func (gate *Gate) WithRateLimit(maximumRequestsPerSecond int) *Gate {
 	gate.rateLimiter = NewRateLimiter(maximumRequestsPerSecond)
 	return gate
