@@ -5,6 +5,7 @@
 [![codecov](https://codecov.io/gh/TwinProduction/gocache/branch/master/graph/badge.svg)](https://codecov.io/gh/TwinProduction/gocache)
 [![Go version](https://img.shields.io/github/go-mod/go-version/TwinProduction/gocache.svg)](https://github.com/TwinProduction/gocache)
 [![Go Reference](https://pkg.go.dev/badge/github.com/TwinProduction/gocache.svg)](https://pkg.go.dev/github.com/TwinProduction/gocache)
+[![Follow TwinProduction](https://img.shields.io/github/followers/TwinProduction?label=Follow&style=social)](https://github.com/TwinProduction)
 
 gocache is an easy-to-use, high-performance, lightweight and thread-safe (goroutine-safe) in-memory key-value cache 
 with support for LRU and FIFO eviction policies as well as expiration, bulk operations and even persistence to file.

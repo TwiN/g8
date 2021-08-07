@@ -1,5 +1,5 @@
-github.com/TwinProduction/gocache v1.2.2 h1:GpIq4HW+oLFlxO8mXapWKx54qT8p7SMWh2tf91jkLDU=
-github.com/TwinProduction/gocache v1.2.2/go.mod h1:Yj2daITit8TTBgiOpc26XCDSbg9xcFskUilHj9u3Mh8=
+github.com/TwinProduction/gocache v1.2.3 h1:4wFNih4CemUX+A99Gk/EsaU0SXSNZV42Ve77v7/7ToY=
+github.com/TwinProduction/gocache v1.2.3/go.mod h1:Yj2daITit8TTBgiOpc26XCDSbg9xcFskUilHj9u3Mh8=
 github.com/fsnotify/fsnotify v1.4.7/go.mod h1:jwhsz4b93w/PPRr/qN1Yymfu8t87LnFCMoQvtojpjFo=
 github.com/fsnotify/fsnotify v1.4.9/go.mod h1:znqG4EE+3YCdAaPaxE2ZRY/06pZUdp0tY4IgpuI1SZQ=
 github.com/go-redis/redis v6.15.9+incompatible/go.mod h1:NAIEuMOZ/fxfXJIrKDQDz8wamY7mA7PouImQ2Jvg6kA=
