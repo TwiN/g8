@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/TwinProduction/gocache"
+	"github.com/TwiN/gocache"
 )
 
 var (

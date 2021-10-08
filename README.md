@@ -1,11 +1,11 @@
 # g8
 
-![build](https://github.com/TwinProduction/g8/workflows/build/badge.svg?branch=master) 
-[![Go Report Card](https://goreportcard.com/badge/github.com/TwinProduction/g8)](https://goreportcard.com/report/github.com/TwinProduction/g8)
-[![codecov](https://codecov.io/gh/TwinProduction/g8/branch/master/graph/badge.svg)](https://codecov.io/gh/TwinProduction/g8)
-[![Go version](https://img.shields.io/github/go-mod/go-version/TwinProduction/g8.svg)](https://github.com/TwinProduction/g8)
-[![Go Reference](https://pkg.go.dev/badge/github.com/TwinProduction/g8.svg)](https://pkg.go.dev/github.com/TwinProduction/g8)
-[![Follow TwinProduction](https://img.shields.io/github/followers/TwinProduction?label=Follow&style=social)](https://github.com/TwinProduction)
+![build](https://github.com/TwiN/g8/workflows/build/badge.svg?branch=master) 
+[![Go Report Card](https://goreportcard.com/badge/github.com/TwiN/g8)](https://goreportcard.com/report/github.com/TwiN/g8)
+[![codecov](https://codecov.io/gh/TwiN/g8/branch/master/graph/badge.svg)](https://codecov.io/gh/TwiN/g8)
+[![Go version](https://img.shields.io/github/go-mod/go-version/TwiN/g8.svg)](https://github.com/TwiN/g8)
+[![Go Reference](https://pkg.go.dev/badge/github.com/TwiN/g8.svg)](https://pkg.go.dev/github.com/TwiN/g8)
+[![Follow TwiN](https://img.shields.io/github/followers/TwiN?label=Follow&style=social)](https://github.com/TwiN)
 
 g8, pronounced gate, is a simple Go library for protecting HTTP handlers with tokens.
 
@@ -14,7 +14,7 @@ Tired of constantly re-implementing a security layer for each of applications? M
 
 ## Installation
 ```
-go get -u github.com/TwinProduction/g8
+go get -u github.com/TwiN/g8
 ```
 
 
@@ -100,7 +100,7 @@ You can also configure the client provider to cache the output of the function y
 clientProvider := g8.NewClientProvider(...).WithCache(ttl, maxSize)
 ```
 
-Since g8 leverages [TwinProduction/gocache](https://github.com/TwinProduction/gocache), you can also use gocache's 
+Since g8 leverages [TwiN/gocache](https://github.com/TwiN/gocache), you can also use gocache's 
 constants for configuring the TTL and the maximum size:
 - Setting the TTL to `gocache.NoExpiration` (-1) will disable the TTL. 
 - Setting the maximum size to `gocache.NoMaxSize` (0) will disable the maximum cache size
