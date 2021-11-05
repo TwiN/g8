@@ -4,7 +4,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/TwiN/gocache"
+	"github.com/TwiN/gocache/v2"
 )
 
 var (
