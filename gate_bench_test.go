@@ -62,7 +62,7 @@ func BenchmarkGate_ProtectWithInvalidToken(b *testing.B) {
 
 func BenchmarkGate_ProtectWithValidToken(b *testing.B) {
 	gate := NewGate(NewAuthorizationService().WithToken("good-token"))
-	request, _ := http.NewRequest("GET", "/handle", nil)
+	request, _ := http.NewRequest("GET", "/handle", http.NoBody)
 	request.Header.Add("Authorization", fmt.Sprintf("Bearer %s", "good-token"))
 
 	router := http.NewServeMux()
@@ -80,7 +80,7 @@ func BenchmarkGate_ProtectWithValidToken(b *testing.B) {
 
 func BenchmarkGate_ProtectWithPermissionsAndValidToken(b *testing.B) {
 	gate := NewGate(NewAuthorizationService().WithClient(NewClient("token").WithPermission("admin")))
-	request, _ := http.NewRequest("GET", "/handle", nil)
+	request, _ := http.NewRequest("GET", "/handle", http.NoBody)
 	request.Header.Add("Authorization", fmt.Sprintf("Bearer %s", "token"))
 
 	router := http.NewServeMux()
@@ -98,7 +98,7 @@ func BenchmarkGate_ProtectWithPermissionsAndValidToken(b *testing.B) {
 
 func BenchmarkGate_ProtectWithPermissionsAndValidTokenButInsufficientPermissions(b *testing.B) {
 	gate := NewGate(NewAuthorizationService().WithClient(NewClient("token").WithPermission("mod")))
-	request, _ := http.NewRequest("GET", "/handle", nil)
+	request, _ := http.NewRequest("GET", "/handle", http.NoBody)
 	request.Header.Add("Authorization", fmt.Sprintf("Bearer %s", "token"))
 
 	router := http.NewServeMux()
@@ -117,10 +117,10 @@ func BenchmarkGate_ProtectWithPermissionsAndValidTokenButInsufficientPermissions
 func BenchmarkGate_ProtectConcurrently(b *testing.B) {
 	gate := NewGate(NewAuthorizationService().WithToken("good-token"))
 
-	request, _ := http.NewRequest("GET", "/handle", nil)
+	request, _ := http.NewRequest("GET", "/handle", http.NoBody)
 	request.Header.Add("Authorization", fmt.Sprintf("Bearer %s", "good-token"))
 
-	badRequest, _ := http.NewRequest("GET", "/handle", nil)
+	badRequest, _ := http.NewRequest("GET", "/handle", http.NoBody)
 	badRequest.Header.Add("Authorization", fmt.Sprintf("Bearer %s", "bad-token"))
 
 	router := http.NewServeMux()
@@ -146,13 +146,13 @@ func BenchmarkGate_ProtectConcurrently(b *testing.B) {
 func BenchmarkGate_ProtectWithClientProviderConcurrently(b *testing.B) {
 	gate := NewGate(NewAuthorizationService().WithClientProvider(mockClientProvider))
 
-	request, _ := http.NewRequest("GET", "/handle", nil)
+	request, _ := http.NewRequest("GET", "/handle", http.NoBody)
 	request.Header.Add("Authorization", fmt.Sprintf("Bearer %s", TestProviderToken))
 
-	firstBadRequest, _ := http.NewRequest("GET", "/handle", nil)
+	firstBadRequest, _ := http.NewRequest("GET", "/handle", http.NoBody)
 	firstBadRequest.Header.Set("Authorization", fmt.Sprintf("Bearer %s", "bad-token-1"))
 
-	secondBadRequest, _ := http.NewRequest("GET", "/handle", nil)
+	secondBadRequest, _ := http.NewRequest("GET", "/handle", http.NoBody)
 	secondBadRequest.Header.Set("Authorization", fmt.Sprintf("Bearer %s", "bad-token-2"))
 
 	router := http.NewServeMux()

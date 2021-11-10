@@ -57,7 +57,7 @@ func TestUsability(t *testing.T) {
 }
 
 func TestUnprotectedHandler(t *testing.T) {
-	request, _ := http.NewRequest("GET", "/handle", nil)
+	request, _ := http.NewRequest("GET", "/handle", http.NoBody)
 	request.Header.Add("Authorization", fmt.Sprintf("Bearer %s", "bad-token"))
 	responseRecorder := httptest.NewRecorder()
 
@@ -72,7 +72,7 @@ func TestUnprotectedHandler(t *testing.T) {
 
 func TestGate_ProtectWithInvalidToken(t *testing.T) {
 	gate := NewGate(NewAuthorizationService().WithToken("good-token"))
-	request, _ := http.NewRequest("GET", "/handle", nil)
+	request, _ := http.NewRequest("GET", "/handle", http.NoBody)
 	request.Header.Add("Authorization", fmt.Sprintf("Bearer %s", "bad-token"))
 	responseRecorder := httptest.NewRecorder()
 
@@ -87,7 +87,7 @@ func TestGate_ProtectWithInvalidToken(t *testing.T) {
 
 func TestGate_ProtectWithValidToken(t *testing.T) {
 	gate := NewGate(NewAuthorizationService().WithToken("good-token"))
-	request, _ := http.NewRequest("GET", "/handle", nil)
+	request, _ := http.NewRequest("GET", "/handle", http.NoBody)
 	request.Header.Add("Authorization", fmt.Sprintf("Bearer %s", "good-token"))
 	responseRecorder := httptest.NewRecorder()
 
@@ -102,9 +102,9 @@ func TestGate_ProtectWithValidToken(t *testing.T) {
 
 func TestGate_ProtectMultipleTimes(t *testing.T) {
 	gate := NewGate(NewAuthorizationService().WithToken("good-token"))
-	request, _ := http.NewRequest("GET", "/handle", nil)
+	request, _ := http.NewRequest("GET", "/handle", http.NoBody)
 	request.Header.Add("Authorization", fmt.Sprintf("Bearer %s", "good-token"))
-	badRequest, _ := http.NewRequest("GET", "/handle", nil)
+	badRequest, _ := http.NewRequest("GET", "/handle", http.NoBody)
 	badRequest.Header.Add("Authorization", fmt.Sprintf("Bearer %s", "bad-token"))
 
 	router := http.NewServeMux()
@@ -126,7 +126,7 @@ func TestGate_ProtectMultipleTimes(t *testing.T) {
 
 func TestGate_ProtectWithValidTokenExposedThroughClientProvider(t *testing.T) {
 	gate := NewGate(NewAuthorizationService().WithClientProvider(mockClientProvider))
-	request, _ := http.NewRequest("GET", "/handle", nil)
+	request, _ := http.NewRequest("GET", "/handle", http.NoBody)
 	request.Header.Add("Authorization", fmt.Sprintf("Bearer %s", TestProviderToken))
 	responseRecorder := httptest.NewRecorder()
 
@@ -141,7 +141,7 @@ func TestGate_ProtectWithValidTokenExposedThroughClientProvider(t *testing.T) {
 
 func TestGate_ProtectWithValidTokenExposedThroughClientProviderWithCache(t *testing.T) {
 	gate := NewGate(NewAuthorizationService().WithClientProvider(mockClientProvider.WithCache(60*time.Minute, 70000)))
-	request, _ := http.NewRequest("GET", "/handle", nil)
+	request, _ := http.NewRequest("GET", "/handle", http.NoBody)
 	request.Header.Add("Authorization", fmt.Sprintf("Bearer %s", TestProviderToken))
 	responseRecorder := httptest.NewRecorder()
 
@@ -156,7 +156,7 @@ func TestGate_ProtectWithValidTokenExposedThroughClientProviderWithCache(t *test
 
 func TestGate_ProtectWithInvalidTokenWhenUsingClientProvider(t *testing.T) {
 	gate := NewGate(NewAuthorizationService().WithClientProvider(mockClientProvider))
-	request, _ := http.NewRequest("GET", "/handle", nil)
+	request, _ := http.NewRequest("GET", "/handle", http.NoBody)
 	request.Header.Add("Authorization", fmt.Sprintf("Bearer %s", "bad-token"))
 	responseRecorder := httptest.NewRecorder()
 
@@ -171,7 +171,7 @@ func TestGate_ProtectWithInvalidTokenWhenUsingClientProvider(t *testing.T) {
 
 func TestGate_ProtectWithPermissionsWhenValidTokenAndSufficientPermissionsWhileUsingClientProvider(t *testing.T) {
 	gate := NewGate(NewAuthorizationService().WithClientProvider(mockClientProvider))
-	request, _ := http.NewRequest("GET", "/handle", nil)
+	request, _ := http.NewRequest("GET", "/handle", http.NoBody)
 	request.Header.Add("Authorization", fmt.Sprintf("Bearer %s", TestProviderToken))
 	responseRecorder := httptest.NewRecorder()
 
@@ -189,7 +189,7 @@ func TestGate_ProtectWithPermissionsWhenValidTokenAndSufficientPermissionsWhileU
 
 func TestGate_ProtectWithPermissionsWhenValidTokenAndInsufficientPermissionsWhileUsingClientProvider(t *testing.T) {
 	gate := NewGate(NewAuthorizationService().WithClientProvider(mockClientProvider))
-	request, _ := http.NewRequest("GET", "/handle", nil)
+	request, _ := http.NewRequest("GET", "/handle", http.NoBody)
 	request.Header.Add("Authorization", fmt.Sprintf("Bearer %s", TestProviderToken))
 	responseRecorder := httptest.NewRecorder()
 
@@ -207,7 +207,7 @@ func TestGate_ProtectWithPermissionsWhenValidTokenAndInsufficientPermissionsWhil
 
 func TestGate_ProtectWithPermissionsWhenClientHasSufficientPermissions(t *testing.T) {
 	gate := NewGate(NewAuthorizationService().WithClient(NewClient("token").WithPermission("admin")))
-	request, _ := http.NewRequest("GET", "/handle", nil)
+	request, _ := http.NewRequest("GET", "/handle", http.NoBody)
 	request.Header.Add("Authorization", fmt.Sprintf("Bearer %s", "token"))
 	responseRecorder := httptest.NewRecorder()
 
@@ -224,7 +224,7 @@ func TestGate_ProtectWithPermissionsWhenClientHasSufficientPermissions(t *testin
 
 func TestGate_ProtectWithPermissionsWhenClientHasInsufficientPermissions(t *testing.T) {
 	gate := NewGate(NewAuthorizationService().WithClient(NewClientWithPermissions("token", []string{"mod"})))
-	request, _ := http.NewRequest("GET", "/handle", nil)
+	request, _ := http.NewRequest("GET", "/handle", http.NoBody)
 	request.Header.Add("Authorization", fmt.Sprintf("Bearer %s", "token"))
 	responseRecorder := httptest.NewRecorder()
 
@@ -252,7 +252,7 @@ func TestGate_ProtectWithPermissions(t *testing.T) {
 
 	checkRouterOutput := func(t *testing.T, router *http.ServeMux, url string, expectedResponseCode int) {
 		t.Run(strings.TrimPrefix(url, "/"), func(t *testing.T) {
-			request, _ := http.NewRequest("GET", url, nil)
+			request, _ := http.NewRequest("GET", url, http.NoBody)
 			request.Header.Add("Authorization", fmt.Sprintf("Bearer %s", "mytoken"))
 			responseRecorder := httptest.NewRecorder()
 			router.ServeHTTP(responseRecorder, request)
@@ -272,7 +272,7 @@ func TestGate_ProtectWithPermissions(t *testing.T) {
 
 func TestGate_ProtectWithPermissionWhenClientHasSufficientPermissions(t *testing.T) {
 	gate := NewGate(NewAuthorizationService().WithClient(NewClient("token").WithPermission("admin")))
-	request, _ := http.NewRequest("GET", "/handle", nil)
+	request, _ := http.NewRequest("GET", "/handle", http.NoBody)
 	request.Header.Add("Authorization", fmt.Sprintf("Bearer %s", "token"))
 	responseRecorder := httptest.NewRecorder()
 
@@ -289,7 +289,7 @@ func TestGate_ProtectWithPermissionWhenClientHasSufficientPermissions(t *testing
 
 func TestGate_ProtectWithPermissionWhenClientHasInsufficientPermissions(t *testing.T) {
 	gate := NewGate(NewAuthorizationService().WithClient(NewClientWithPermissions("token", []string{"mod"})))
-	request, _ := http.NewRequest("GET", "/handle", nil)
+	request, _ := http.NewRequest("GET", "/handle", http.NoBody)
 	request.Header.Add("Authorization", fmt.Sprintf("Bearer %s", "token"))
 	responseRecorder := httptest.NewRecorder()
 
@@ -306,7 +306,7 @@ func TestGate_ProtectWithPermissionWhenClientHasInsufficientPermissions(t *testi
 
 func TestGate_ProtectFuncWithInvalidToken(t *testing.T) {
 	gate := NewGate(NewAuthorizationService().WithToken("good-token"))
-	request, _ := http.NewRequest("GET", "/handle", nil)
+	request, _ := http.NewRequest("GET", "/handle", http.NoBody)
 	request.Header.Add("Authorization", fmt.Sprintf("Bearer %s", "bad-token"))
 	responseRecorder := httptest.NewRecorder()
 
@@ -321,7 +321,7 @@ func TestGate_ProtectFuncWithInvalidToken(t *testing.T) {
 
 func TestGate_ProtectFuncWithValidToken(t *testing.T) {
 	gate := NewGate(NewAuthorizationService().WithToken("good-token"))
-	request, _ := http.NewRequest("GET", "/handle", nil)
+	request, _ := http.NewRequest("GET", "/handle", http.NoBody)
 	request.Header.Add("Authorization", fmt.Sprintf("Bearer %s", "good-token"))
 	responseRecorder := httptest.NewRecorder()
 
@@ -336,7 +336,7 @@ func TestGate_ProtectFuncWithValidToken(t *testing.T) {
 
 func TestGate_ProtectFuncWithPermissionWhenClientHasSufficientPermissions(t *testing.T) {
 	gate := NewGate(NewAuthorizationService().WithClient(NewClient("token").WithPermission("admin")))
-	request, _ := http.NewRequest("GET", "/handle", nil)
+	request, _ := http.NewRequest("GET", "/handle", http.NoBody)
 	request.Header.Add("Authorization", fmt.Sprintf("Bearer %s", "token"))
 	responseRecorder := httptest.NewRecorder()
 
@@ -353,7 +353,7 @@ func TestGate_ProtectFuncWithPermissionWhenClientHasSufficientPermissions(t *tes
 
 func TestGate_ProtectFuncWithPermissionWhenClientHasInsufficientPermissions(t *testing.T) {
 	gate := NewGate(NewAuthorizationService().WithClient(NewClientWithPermissions("token", []string{"mod"})))
-	request, _ := http.NewRequest("GET", "/handle", nil)
+	request, _ := http.NewRequest("GET", "/handle", http.NoBody)
 	request.Header.Add("Authorization", fmt.Sprintf("Bearer %s", "token"))
 	responseRecorder := httptest.NewRecorder()
 
@@ -370,7 +370,7 @@ func TestGate_ProtectFuncWithPermissionWhenClientHasInsufficientPermissions(t *t
 
 func TestGate_WithCustomUnauthorizedResponseBody(t *testing.T) {
 	gate := NewGate(NewAuthorizationService()).WithCustomUnauthorizedResponseBody([]byte("test"))
-	request, _ := http.NewRequest("GET", "/handle", nil)
+	request, _ := http.NewRequest("GET", "/handle", http.NoBody)
 	request.Header.Add("Authorization", fmt.Sprintf("Bearer %s", "bad-token"))
 	responseRecorder := httptest.NewRecorder()
 
@@ -388,7 +388,7 @@ func TestGate_WithCustomUnauthorizedResponseBody(t *testing.T) {
 
 func TestGate_ProtectWithNilAuthorizationService(t *testing.T) {
 	gate := NewGate(nil)
-	request, _ := http.NewRequest("GET", "/handle", nil)
+	request, _ := http.NewRequest("GET", "/handle", http.NoBody)
 	responseRecorder := httptest.NewRecorder()
 
 	router := http.NewServeMux()
@@ -402,7 +402,7 @@ func TestGate_ProtectWithNilAuthorizationService(t *testing.T) {
 
 func TestGate_ProtectWithNilAuthorizationServiceAndRateLimit(t *testing.T) {
 	gate := NewGate(nil).WithRateLimit(2)
-	request, _ := http.NewRequest("GET", "/handle", nil)
+	request, _ := http.NewRequest("GET", "/handle", http.NoBody)
 	router := http.NewServeMux()
 	router.Handle("/handle", gate.Protect(&testHandler{}))
 
