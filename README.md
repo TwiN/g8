@@ -9,7 +9,7 @@
 
 g8, pronounced gate, is a simple Go library for protecting HTTP handlers with tokens.
 
-Tired of constantly re-implementing a security layer for each of applications? Me too, that's why I made g8.
+Tired of constantly re-implementing a security layer for each application? Me too, that's why I made g8.
 
 
 ## Installation
