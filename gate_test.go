@@ -2,7 +2,7 @@ package g8
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -381,7 +381,7 @@ func TestGate_WithCustomUnauthorizedResponseBody(t *testing.T) {
 	if responseRecorder.Code != http.StatusUnauthorized {
 		t.Errorf("%s %s should have returned %d, but returned %d instead", request.Method, request.URL, http.StatusUnauthorized, responseRecorder.Code)
 	}
-	if responseBody, _ := ioutil.ReadAll(responseRecorder.Body); string(responseBody) != "test" {
+	if responseBody, _ := io.ReadAll(responseRecorder.Body); string(responseBody) != "test" {
 		t.Errorf("%s %s should have returned %s, but returned %s instead", request.Method, request.URL, "test", string(responseBody))
 	}
 }
