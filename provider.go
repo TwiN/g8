@@ -15,11 +15,11 @@ var (
 
 	// ErrCacheNotInitialized is the error returned by ClientProvider.StartCacheJanitor if there was an attempt to start
 	// the janitor despite the cache not having been initialized using ClientProvider.WithCache
-	ErrCacheNotInitialized = errors.New("cannot cache not configured")
+	ErrCacheNotInitialized = errors.New("cannot start janitor because cache is not configured")
 )
 
 // ClientProvider has the task of retrieving a Client from an external source (e.g. a database) when provided with a
-// token. It should be used when you have a lot of tokens and it wouldn't make sense to register all of them using
+// token. It should be used when you have a lot of tokens, and it wouldn't make sense to register all of them using
 // AuthorizationService's WithToken, WithTokens, WithClient or WithClients.
 //
 // Note that the provider is used as a fallback source. As such, if a token is explicitly registered using one of the 4
