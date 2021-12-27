@@ -124,11 +124,15 @@ func (provider *ClientProvider) GetClientByToken(token string) *Client {
 	if provider.cache == nil {
 		return provider.getClientByTokenFunc(token)
 	}
-	if client, exists := provider.cache.Get(token); exists {
-		if client == nil {
+	if cachedClient, exists := provider.cache.Get(token); exists {
+		if cachedClient == nil {
 			return nil
 		}
-		return client.(*Client)
+		// Safely typecast the client.
+		// Regardless of whether the typecast is successful or not, we return client since it'll be either client or
+		// nil. Technically, it should never be nil, but it's better to be safe than sorry.
+		client, _ := cachedClient.(*Client)
+		return client
 	}
 	client := provider.getClientByTokenFunc(token)
 	provider.cache.SetWithTTL(token, client, provider.ttl)
