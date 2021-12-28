@@ -26,7 +26,7 @@ func NewAuthorizationService() *AuthorizationService {
 // specific permission.
 //
 // In other words, if you were to do the following:
-//     gate := g8.NewGate(g8.NewAuthorizationService().WithToken("12345"))
+//     gate := g8.New().WithAuthorizationService(g8.NewAuthorizationService().WithToken("12345"))
 //
 // The following handler would be accessible with the token 12345:
 //     router.Handle("/1st-handler", gate.Protect(yourHandler))
@@ -62,7 +62,7 @@ func (authorizationService *AuthorizationService) WithTokens(tokens []string) *A
 // permissions and thus, be a lot more granular with what endpoint a token has access to.
 //
 // In other words, if you were to do the following:
-//     gate := g8.NewGate(g8.NewAuthorizationService().WithClient(g8.NewClient("12345").WithPermission("mod")))
+//     gate := g8.New().WithAuthorizationService(g8.NewAuthorizationService().WithClient(g8.NewClient("12345").WithPermission("mod")))
 //
 // The following handlers would be accessible with the token 12345:
 //     router.Handle("/1st-handler", gate.ProtectWithPermissions(yourHandler, []string{"mod"}))

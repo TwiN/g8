@@ -26,7 +26,7 @@ func BenchmarkTestHandler(b *testing.B) {
 }
 
 func BenchmarkGate_ProtectWhenNoAuthorizationHeader(b *testing.B) {
-	gate := NewGate(NewAuthorizationService().WithToken("good-token"))
+	gate := New().WithAuthorizationService(NewAuthorizationService().WithToken("good-token"))
 	request, _ := http.NewRequest("GET", "/handle", nil)
 
 	router := http.NewServeMux()
@@ -43,7 +43,7 @@ func BenchmarkGate_ProtectWhenNoAuthorizationHeader(b *testing.B) {
 }
 
 func BenchmarkGate_ProtectWithInvalidToken(b *testing.B) {
-	gate := NewGate(NewAuthorizationService().WithToken("good-token"))
+	gate := New().WithAuthorizationService(NewAuthorizationService().WithToken("good-token"))
 	request, _ := http.NewRequest("GET", "/handle", nil)
 	request.Header.Add("Authorization", fmt.Sprintf("Bearer %s", "bad-token"))
 
@@ -61,7 +61,7 @@ func BenchmarkGate_ProtectWithInvalidToken(b *testing.B) {
 }
 
 func BenchmarkGate_ProtectWithValidToken(b *testing.B) {
-	gate := NewGate(NewAuthorizationService().WithToken("good-token"))
+	gate := New().WithAuthorizationService(NewAuthorizationService().WithToken("good-token"))
 	request, _ := http.NewRequest("GET", "/handle", http.NoBody)
 	request.Header.Add("Authorization", fmt.Sprintf("Bearer %s", "good-token"))
 
@@ -79,7 +79,7 @@ func BenchmarkGate_ProtectWithValidToken(b *testing.B) {
 }
 
 func BenchmarkGate_ProtectWithPermissionsAndValidToken(b *testing.B) {
-	gate := NewGate(NewAuthorizationService().WithClient(NewClient("token").WithPermission("admin")))
+	gate := New().WithAuthorizationService(NewAuthorizationService().WithClient(NewClient("token").WithPermission("admin")))
 	request, _ := http.NewRequest("GET", "/handle", http.NoBody)
 	request.Header.Add("Authorization", fmt.Sprintf("Bearer %s", "token"))
 
@@ -97,7 +97,7 @@ func BenchmarkGate_ProtectWithPermissionsAndValidToken(b *testing.B) {
 }
 
 func BenchmarkGate_ProtectWithPermissionsAndValidTokenButInsufficientPermissions(b *testing.B) {
-	gate := NewGate(NewAuthorizationService().WithClient(NewClient("token").WithPermission("mod")))
+	gate := New().WithAuthorizationService(NewAuthorizationService().WithClient(NewClient("token").WithPermission("mod")))
 	request, _ := http.NewRequest("GET", "/handle", http.NoBody)
 	request.Header.Add("Authorization", fmt.Sprintf("Bearer %s", "token"))
 
@@ -115,7 +115,7 @@ func BenchmarkGate_ProtectWithPermissionsAndValidTokenButInsufficientPermissions
 }
 
 func BenchmarkGate_ProtectConcurrently(b *testing.B) {
-	gate := NewGate(NewAuthorizationService().WithToken("good-token"))
+	gate := New().WithAuthorizationService(NewAuthorizationService().WithToken("good-token"))
 
 	request, _ := http.NewRequest("GET", "/handle", http.NoBody)
 	request.Header.Add("Authorization", fmt.Sprintf("Bearer %s", "good-token"))
@@ -144,7 +144,7 @@ func BenchmarkGate_ProtectConcurrently(b *testing.B) {
 }
 
 func BenchmarkGate_ProtectWithClientProviderConcurrently(b *testing.B) {
-	gate := NewGate(NewAuthorizationService().WithClientProvider(mockClientProvider))
+	gate := New().WithAuthorizationService(NewAuthorizationService().WithClientProvider(mockClientProvider))
 
 	request, _ := http.NewRequest("GET", "/handle", http.NoBody)
 	request.Header.Add("Authorization", fmt.Sprintf("Bearer %s", TestProviderToken))

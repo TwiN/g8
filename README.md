@@ -7,13 +7,13 @@
 [![Go Reference](https://pkg.go.dev/badge/github.com/TwiN/g8.svg)](https://pkg.go.dev/github.com/TwiN/g8)
 [![Follow TwiN](https://img.shields.io/github/followers/TwiN?label=Follow&style=social)](https://github.com/TwiN)
 
-g8, pronounced gate, is a simple Go library for protecting HTTP handlers with tokens.
+g8, pronounced gate, is a simple Go library for protecting HTTP handlers.
 
 Tired of constantly re-implementing a security layer for each application? Me too, that's why I made g8.
 
 
 ## Installation
-```
+```console
 go get -u github.com/TwiN/g8
 ```
 
@@ -28,16 +28,22 @@ Just want a simple layer of security without the need for advanced permissions? 
 looking for.
 
 ```go
-gate := g8.NewGate(g8.NewAuthorizationService().WithToken("mytoken"))
+authorizationService := g8.NewAuthorizationService().WithToken("mytoken")
+gate := g8.New().WithAuthorizationService(authorizationService)
+
 router := http.NewServeMux()
 router.Handle("/unprotected", yourHandler)
 router.Handle("/protected", gate.Protect(yourHandler))
+
 http.ListenAndServe(":8080", router)
 ```
 
 The endpoint `/protected` is now only accessible if you pass the header `Authorization: Bearer mytoken`.
 
 If you use `http.HandleFunc` instead of `http.Handle`, you may use `gate.ProtectFunc(yourHandler)` instead.
+
+If you're not using the `Authorization` header, you can specify a custom token extractor. 
+This enables use cases like [Protecting a handler using session cookie](#protecting-a-handler-using-session-cookie)
 
 
 ### Advanced permissions
@@ -47,17 +53,20 @@ Rather than registering tokens, think of it as registering clients, the only dif
 configured with permissions while tokens cannot. 
 
 ```go
-gate := g8.NewGate(g8.NewAuthorizationService().WithClient(g8.NewClient("mytoken").WithPermission("admin")))
+authorizationService := g8.NewAuthorizationService().WithClient(g8.NewClient("mytoken").WithPermission("admin"))
+gate := g8.New().WithAuthorizationService(authorizationService)
+
 router := http.NewServeMux()
 router.Handle("/unprotected", yourHandler)
 router.Handle("/protected-with-admin", gate.ProtectWithPermissions(yourHandler, []string{"admin"}))
+
 http.ListenAndServe(":8080", router)
 ```
 
 The endpoint `/protected-with-admin` is now only accessible if you pass the header `Authorization: Bearer mytoken`,
 because the client with the token `mytoken` has the permission `admin`. Note that the following handler would also be
 accessible with that token:
-```
+```go
 router.Handle("/protected", gate.Protect(yourHandler))
 ```
 
@@ -66,11 +75,11 @@ essentially, tokens are registered as clients with no extra permissions in the b
 
 Creating a token like so:
 ```go
-gate := g8.NewGate(g8.NewAuthorizationService().WithToken("mytoken"))
+authorizationService := g8.NewAuthorizationService().WithToken("mytoken")
 ```
 is the equivalent of creating the following client:
 ```go
-gate := g8.NewGate(g8.NewAuthorizationService().WithClient(g8.NewClient("mytoken")))
+authorizationService := g8.NewAuthorizationService().WithClient(g8.NewClient("mytoken"))
 ```
 
 
@@ -92,7 +101,8 @@ clientProvider := g8.NewClientProvider(func(token string) *g8.Client {
     }
     return nil
 })
-gate := g8.NewGate(g8.NewAuthorizationService().WithClientProvider(clientProvider))
+authorizationService := g8.NewAuthorizationService().WithClientProvider(clientProvider)
+gate := g8.New().WithAuthorizationService(authorizationService)
 ```
 
 You can also configure the client provider to cache the output of the function you provide to retrieve clients by token:
@@ -122,13 +132,13 @@ As the previous examples may have hinted, there are several ways to create clien
 in common is that they all go through AuthorizationService, which is in charge of both managing clients and determining
 whether a request should be blocked or allowed through.
 
-| Function | Description | 
-|:--- |:--- |
-| WithToken | Creates a single static client with no extra permissions
-| WithTokens | Creates a slice of static clients with no extra permissions
-| WithClient | Creates a single static client
-| WithClients | Creates a slice of static clients
-| WithClientProvider | Creates a client provider which will allow a fallback to a dynamic source (e.g. to a database) when a static client is not found 
+| Function           | Description                                                                                                                      | 
+|:-------------------|:---------------------------------------------------------------------------------------------------------------------------------|
+| WithToken          | Creates a single static client with no extra permissions                                                                         |
+| WithTokens         | Creates a slice of static clients with no extra permissions                                                                      |
+| WithClient         | Creates a single static client                                                                                                   |
+| WithClients        | Creates a slice of static clients                                                                                                |
+| WithClientProvider | Creates a client provider which will allow a fallback to a dynamic source (e.g. to a database) when a static client is not found |
 
 Except for `WithClientProvider`, every functions listed above can be called more than once.
 As a result, you may safely perform actions like this:
@@ -137,7 +147,7 @@ authorizationService := g8.NewAuthorizationService().
     WithToken("123").
     WithToken("456").
     WithClient(g8.NewClient("789").WithPermission("admin"))
-gate := g8.NewGate(authorizationService)
+gate := g8.New().WithAuthorizationService(authorizationService)
 ```
 
 Be aware that g8.Client supports a list of permissions as well. You may call `WithPermission` several times, or call
@@ -152,7 +162,7 @@ permissions, the client must have all permissions defined by said handler in ord
 
 In other words, a client with the permissions `create`, `read`, `update` and `delete` would have access to all of these handlers:
 ```go
-gate := g8.NewGate(g8.NewAuthorizationService().WithClient(g8.NewClient("mytoken").WithPermissions([]string{"create", "read", "update", "delete"})))
+gate := g8.New().WithAuthorizationService(g8.NewAuthorizationService().WithClient(g8.NewClient("mytoken").WithPermissions([]string{"create", "read", "update", "delete"})))
 router := http.NewServeMux()
 router.Handle("/", gate.Protect(homeHandler)) // equivalent of gate.ProtectWithPermissions(homeHandler, []string{})
 router.Handle("/create", gate.ProtectWithPermissions(createHandler, []string{"create"}))
@@ -170,5 +180,59 @@ router.Handle("/backup", gate.ProtectWithPermissions(&testHandler{}, []string{"r
 ## Rate limiting
 To add a rate limit of 100 requests per second:
 ```
-gate := g8.NewGate(nil).WithRateLimit(100)
+gate := g8.New().WithRateLimit(100)
+```
+
+## Special use cases
+### Protecting a handler using session cookie
+If you want to only allow authenticated users to access a handler, you can use a custom token extractor function 
+combined with a client provider.
+
+First, we'll create a function to extract the session ID from the session cookie. While a session ID does not 
+theoretically refer to a token, g8 uses the term `token` as a blanket term to refer to any string that can be used to
+identify a client.
+```go
+customTokenExtractorFunc := func(request *http.Request) string {
+    sessionCookie, err := request.Cookie("session")
+    if err != nil {
+        return ""
+    }
+    return sessionCookie.Value
+}
+```
+
+Next, we need to create a client provider that will validate our token, which refers to the session ID in this case.
+```go
+clientProvider := g8.NewClientProvider(func(token string) *g8.Client {
+    // We'll assume that the following function calls your database and validates whether the session is valid.
+    isSessionValid := database.CheckIfSessionIsValid(token)
+    if !isSessionValid {
+        return nil // Returning nil will cause the gate to return a 401 Unauthorized.
+    }
+    // You could also retrieve the user and their permissions if you wanted instead, but for this example,
+    // all we care about is confirming whether the session is valid or not.
+    return g8.NewClient(token)
+})
+```
+
+Keep in mind that you can get really creative with the client provider above.
+For instance, you could refresh the session's expiration time, which will allow the user to stay logged in for 
+as long as they're active.
+
+You're also not limited to using something stateful like the example above. You could use a JWT and have your client
+provider validate said JWT.
+
+Finally, we can create the authorization service and the gate:
+```go
+authorizationService := g8.NewAuthorizationService().WithClientProvider(clientProvider)
+gate := g8.New().WithAuthorizationService(authorizationService).WithCustomTokenExtractor(customTokenExtractorFunc)
+```
+
+If you need to access the token (session ID in this case) from the protected handlers, you can retrieve it from the
+request context by using the key `g8.TokenContextKey`:
+```go
+http.Handle("/handle", gate.ProtectFunc(func(w http.ResponseWriter, r *http.Request) {
+    sessionID, _ := r.Context().Value(g8.TokenContextKey).(string)
+    // ...
+}))
 ```
