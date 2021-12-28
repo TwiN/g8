@@ -36,7 +36,7 @@ var (
 //         }
 //         return nil
 //     })
-//     gate := g8.NewGate(g8.NewAuthorizationService().WithClientProvider(clientProvider))
+//     gate := g8.New().WithAuthorizationService(g8.NewAuthorizationService().WithClientProvider(clientProvider))
 //
 type ClientProvider struct {
 	getClientByTokenFunc func(token string) *Client
@@ -53,12 +53,12 @@ type ClientProvider struct {
 //         // We'll assume that the following function calls your database and returns a struct "User" that
 //         // has the user's token as well as the permissions granted to said user
 //         user := database.GetUserByToken(token)
-//         if user != nil {
-//             return g8.NewClient(user.Token).WithPermissions(user.Permissions)
+//         if user == nil {
+//             return nil
 //         }
-//         return nil
+//         return g8.NewClient(user.Token).WithPermissions(user.Permissions)
 //     })
-//     gate := g8.NewGate(g8.NewAuthorizationService().WithClientProvider(clientProvider))
+//     gate := g8.New().WithAuthorizationService(g8.NewAuthorizationService().WithClientProvider(clientProvider))
 //
 func NewClientProvider(getClientByTokenFunc func(token string) *Client) *ClientProvider {
 	return &ClientProvider{
@@ -82,7 +82,7 @@ func NewClientProvider(getClientByTokenFunc func(token string) *Client) *ClientP
 //         }
 //         return nil
 //     })
-//     gate := g8.NewGate(g8.NewAuthorizationService().WithClientProvider(clientProvider.WithCache(time.Hour, 70000)))
+//     gate := g8.New().WithAuthorizationService(g8.NewAuthorizationService().WithClientProvider(clientProvider.WithCache(time.Hour, 70000)))
 //
 func (provider *ClientProvider) WithCache(ttl time.Duration, maxSize int) *ClientProvider {
 	provider.cache = gocache.NewCache().WithEvictionPolicy(gocache.LeastRecentlyUsed).WithMaxSize(maxSize)

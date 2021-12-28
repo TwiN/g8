@@ -2,7 +2,7 @@ package g8
 
 // Client is a struct containing both a Token and a slice of extra Permissions that said token has.
 type Client struct {
-	// Token is the Bearer token found in the value of a Authorization header
+	// Token is the value used to authenticate with the API.
 	Token string
 
 	// Permissions is a slice of extra permissions that may be used for more granular access control.
