@@ -28,10 +28,13 @@ Just want a simple layer of security without the need for advanced permissions? 
 looking for.
 
 ```go
-gate := g8.New().WithAuthorizationService(g8.NewAuthorizationService().WithToken("mytoken"))
+authorizationService := g8.NewAuthorizationService().WithToken("mytoken")
+gate := g8.New().WithAuthorizationService(authorizationService)
+
 router := http.NewServeMux()
 router.Handle("/unprotected", yourHandler)
 router.Handle("/protected", gate.Protect(yourHandler))
+
 http.ListenAndServe(":8080", router)
 ```
 
@@ -40,7 +43,7 @@ The endpoint `/protected` is now only accessible if you pass the header `Authori
 If you use `http.HandleFunc` instead of `http.Handle`, you may use `gate.ProtectFunc(yourHandler)` instead.
 
 If you're not using the `Authorization` header, you can specify a custom token extractor. 
-This enables use cases like [Protecting a handler using session cookie](#)
+This enables use cases like [Protecting a handler using session cookie](#protecting-a-handler-using-session-cookie)
 
 
 ### Advanced permissions
@@ -50,10 +53,13 @@ Rather than registering tokens, think of it as registering clients, the only dif
 configured with permissions while tokens cannot. 
 
 ```go
-gate := g8.New().WithAuthorizationService(g8.NewAuthorizationService().WithClient(g8.NewClient("mytoken").WithPermission("admin")))
+authorizationService := g8.NewAuthorizationService().WithClient(g8.NewClient("mytoken").WithPermission("admin"))
+gate := g8.New().WithAuthorizationService(authorizationService)
+
 router := http.NewServeMux()
 router.Handle("/unprotected", yourHandler)
 router.Handle("/protected-with-admin", gate.ProtectWithPermissions(yourHandler, []string{"admin"}))
+
 http.ListenAndServe(":8080", router)
 ```
 
@@ -69,11 +75,11 @@ essentially, tokens are registered as clients with no extra permissions in the b
 
 Creating a token like so:
 ```go
-gate := g8.New().WithAuthorizationService(g8.NewAuthorizationService().WithToken("mytoken"))
+authorizationService := g8.NewAuthorizationService().WithToken("mytoken")
 ```
 is the equivalent of creating the following client:
 ```go
-gate := g8.New().WithAuthorizationService(g8.NewAuthorizationService().WithClient(g8.NewClient("mytoken")))
+authorizationService := g8.NewAuthorizationService().WithClient(g8.NewClient("mytoken"))
 ```
 
 
@@ -95,7 +101,8 @@ clientProvider := g8.NewClientProvider(func(token string) *g8.Client {
     }
     return nil
 })
-gate := g8.New().WithAuthorizationService(g8.NewAuthorizationService().WithClientProvider(clientProvider))
+authorizationService := g8.NewAuthorizationService().WithClientProvider(clientProvider)
+gate := g8.New().WithAuthorizationService(authorizationService)
 ```
 
 You can also configure the client provider to cache the output of the function you provide to retrieve clients by token:
