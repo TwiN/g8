@@ -179,3 +179,30 @@ func BenchmarkGate_ProtectWithClientProviderConcurrently(b *testing.B) {
 	})
 	b.ReportAllocs()
 }
+
+func BenchmarkGate_ProtectWithValidTokenAndCustomTokenExtractorFuncConcurrently(b *testing.B) {
+	customTokenExtractorFunc := func(request *http.Request) string {
+		sessionCookie, err := request.Cookie("session")
+		if err != nil {
+			return ""
+		}
+		return sessionCookie.Value
+	}
+	gate := New().WithAuthorizationService(NewAuthorizationService().WithToken("good-token")).WithCustomTokenExtractor(customTokenExtractorFunc)
+	request, _ := http.NewRequest("GET", "/handle", http.NoBody)
+	request.AddCookie(&http.Cookie{Name: "session", Value: "good-token"})
+
+	router := http.NewServeMux()
+	router.Handle("/handle", gate.Protect(handler))
+
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			responseRecorder := httptest.NewRecorder()
+			router.ServeHTTP(responseRecorder, request)
+			if responseRecorder.Code != http.StatusOK {
+				b.Fatalf("%s %s should have returned %d, but returned %d instead", request.Method, request.URL, http.StatusOK, responseRecorder.Code)
+			}
+		}
+	})
+	b.ReportAllocs()
+}
