@@ -1,4 +1,4 @@
-name: build
+name: test
 on:
   pull_request:
     paths-ignore:
@@ -9,8 +9,8 @@ on:
     paths-ignore:
       - '*.md'
 jobs:
-  build:
-    name: Build
+  test:
+    name: Test
     runs-on: ubuntu-latest
     timeout-minutes: 3
     steps:
