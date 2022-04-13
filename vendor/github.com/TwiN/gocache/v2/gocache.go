@@ -311,8 +311,8 @@ func (cache *Cache) Get(key string) (interface{}, bool) {
 	cache.mutex.Lock()
 	entry, ok := cache.get(key)
 	if !ok {
-		cache.mutex.Unlock()
 		cache.stats.Misses++
+		cache.mutex.Unlock()
 		return nil, false
 	}
 	if entry.Expired() {
