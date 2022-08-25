@@ -469,3 +469,28 @@ func TestGate_WithCustomTokenExtractor(t *testing.T) {
 		t.Errorf("%s %s should have returned %d, but returned %d instead", request.Method, request.URL, http.StatusOK, responseRecorder.Code)
 	}
 }
+
+func TestGateWithCustomHeader(t *testing.T) {
+	authorizationService := NewAuthorizationService().WithClientProvider(mockClientProvider)
+	customTokenExtractorFunc := func(request *http.Request) string {
+		return request.Header.Get("X-API-Token")
+	}
+	gate := New().WithAuthorizationService(authorizationService).WithCustomTokenExtractor(customTokenExtractorFunc)
+
+	request, _ := http.NewRequest("GET", "/handle", http.NoBody)
+	request.Header.Add("X-API-Token", TestProviderToken)
+	responseRecorder := httptest.NewRecorder()
+
+	router := http.NewServeMux()
+	router.Handle("/handle", gate.ProtectFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Context().Value(TokenContextKey) != TestProviderToken {
+			t.Errorf("token should have been passed to the request context")
+		}
+		w.WriteHeader(http.StatusOK)
+	}))
+	router.ServeHTTP(responseRecorder, request)
+
+	if responseRecorder.Code != http.StatusOK {
+		t.Errorf("%s %s should have returned %d, but returned %d instead", request.Method, request.URL, http.StatusOK, responseRecorder.Code)
+	}
+}
