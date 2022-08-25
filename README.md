@@ -177,13 +177,25 @@ have the `backup` permission:
 router.Handle("/backup", gate.ProtectWithPermissions(&testHandler{}, []string{"read", "backup"}))
 ```
 
+
 ## Rate limiting
 To add a rate limit of 100 requests per second:
 ```
 gate := g8.New().WithRateLimit(100)
 ```
 
-## Special use cases
+
+## Accessing the token from the protected handlers
+If you need to access the token from the handlers you are protecting with g8, you can retrieve it from the
+request context by using the key `g8.TokenContextKey`:
+```go
+http.Handle("/handle", gate.ProtectFunc(func(w http.ResponseWriter, r *http.Request) {
+    token, _ := r.Context().Value(g8.TokenContextKey).(string)
+    // ...
+}))
+```
+
+## Examples
 ### Protecting a handler using session cookie
 If you want to only allow authenticated users to access a handler, you can use a custom token extractor function 
 combined with a client provider.
@@ -235,4 +247,24 @@ http.Handle("/handle", gate.ProtectFunc(func(w http.ResponseWriter, r *http.Requ
     sessionID, _ := r.Context().Value(g8.TokenContextKey).(string)
     // ...
 }))
+```
+
+### Using a custom header
+The logic is the same as the example above:
+```go
+customTokenExtractorFunc := func(request *http.Request) string {
+    return request.Header.Get("X-API-Token")
+}
+
+clientProvider := g8.NewClientProvider(func(token string) *g8.Client {
+    // We'll assume that the following function calls your database and returns a struct "User" that 
+    // has the user's token as well as the permissions granted to said user
+    user := database.GetUserByToken(token)
+    if user != nil {
+        return g8.NewClient(user.Token).WithPermissions(user.Permissions)
+    }
+    return nil
+})
+authorizationService := g8.NewAuthorizationService().WithClientProvider(clientProvider)
+gate := g8.New().WithAuthorizationService(authorizationService).WithCustomTokenExtractor(customTokenExtractorFunc)
 ```
