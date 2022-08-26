@@ -1,5 +1,5 @@
 # gocache
-![build](https://github.com/TwiN/gocache/workflows/test/badge.svg?branch=master) 
+![test](https://github.com/TwiN/gocache/workflows/test/badge.svg?branch=master) 
 [![Go Report Card](https://goreportcard.com/badge/github.com/TwiN/gocache)](https://goreportcard.com/report/github.com/TwiN/gocache)
 [![codecov](https://codecov.io/gh/TwiN/gocache/branch/master/graph/badge.svg)](https://codecov.io/gh/TwiN/gocache)
 [![Go version](https://img.shields.io/github/go-mod/go-version/TwiN/gocache.svg)](https://github.com/TwiN/gocache)
@@ -82,6 +82,7 @@ cache.StartJanitor()
 | GetKeysByPattern                  | Retrieves a slice of keys that matches a given pattern.                                                                                                                                                                                                            |
 | Delete                            | Removes a key from the cache.                                                                                                                                                                                                                                      |
 | DeleteAll                         | Removes multiple keys from the cache.                                                                                                                                                                                                                              |
+| DeleteKeysByPattern               | Removes all keys that that matches a given pattern.                                                                                                                                                                                                                |
 | Count                             | Gets the size of the cache. This includes cache keys which may have already expired, but have not been removed yet.                                                                                                                                                |
 | Clear                             | Wipes the cache.                                                                                                                                                                                                                                                   |
 | TTL                               | Gets the time until a cache key expires.                                                                                                                                                                                                                           |
@@ -132,7 +133,7 @@ func main() {
     cache.SetWithTTL("key-with-ttl", "value", 60*time.Minute)
     cache.SetAll(map[string]interface{}{"k1": "v1", "k2": "v2", "k3": "v3"})
 
-	fmt.Println("[Count] Cache size:", cache.Count())
+    fmt.Println("[Count] Cache size:", cache.Count())
 
     value, exists := cache.Get("key")
     fmt.Printf("[Get] key=key; value=%s; exists=%v\n", value, exists)
