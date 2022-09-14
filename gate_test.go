@@ -311,6 +311,40 @@ func TestGate_ProtectWithPermissionWhenClientHasInsufficientPermissions(t *testi
 	}
 }
 
+func TestGate_PermissionMiddlewareWhenClientHasSufficientPermissions(t *testing.T) {
+	gate := New().WithAuthorizationService(NewAuthorizationService().WithClient(NewClient("token").WithPermission("admin")))
+	request, _ := http.NewRequest("GET", "/handle", http.NoBody)
+	request.Header.Add("Authorization", fmt.Sprintf("Bearer %s", "token"))
+	responseRecorder := httptest.NewRecorder()
+
+	router := http.NewServeMux()
+	router.Handle("/handle", gate.PermissionMiddleware("admin")(&testHandler{}))
+	router.ServeHTTP(responseRecorder, request)
+
+	// Since the client registered directly in the AuthorizationService has the permission "admin" and the testHandler
+	// is protected by the permission "admin", the request should be authorized
+	if responseRecorder.Code != http.StatusOK {
+		t.Errorf("%s %s should have returned %d, but returned %d instead", request.Method, request.URL, http.StatusOK, responseRecorder.Code)
+	}
+}
+
+func TestGate_PermissionMiddlewareWhenClientHasInsufficientPermissions(t *testing.T) {
+	gate := New().WithAuthorizationService(NewAuthorizationService().WithClient(NewClientWithPermissions("token", []string{"mod"})))
+	request, _ := http.NewRequest("GET", "/handle", http.NoBody)
+	request.Header.Add("Authorization", fmt.Sprintf("Bearer %s", "token"))
+	responseRecorder := httptest.NewRecorder()
+
+	router := http.NewServeMux()
+	router.Handle("/handle", gate.PermissionMiddleware("admin")(&testHandler{}))
+	router.ServeHTTP(responseRecorder, request)
+
+	// Since the client registered directly in the AuthorizationService has the permission "mod" and the
+	// testHandler is protected by the permission "admin", the request should be not be authorized
+	if responseRecorder.Code != http.StatusUnauthorized {
+		t.Errorf("%s %s should have returned %d, but returned %d instead", request.Method, request.URL, http.StatusUnauthorized, responseRecorder.Code)
+	}
+}
+
 func TestGate_ProtectFuncWithInvalidToken(t *testing.T) {
 	gate := New().WithAuthorizationService(NewAuthorizationService().WithToken("good-token"))
 	request, _ := http.NewRequest("GET", "/handle", http.NoBody)

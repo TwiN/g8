@@ -177,10 +177,27 @@ have the `backup` permission:
 router.Handle("/backup", gate.ProtectWithPermissions(&testHandler{}, []string{"read", "backup"}))
 ```
 
+If you're using an HTTP library that supports middlewares like [mux](https://github.com/gorilla/mux), you can protect 
+an entire group of handlers instead using `gate.Protect` or `gate.PermissionMiddleware()`:
+```go
+router := mux.NewRouter()
+
+userRouter := router.PathPrefix("/").Subrouter()
+userRouter.Use(gate.Protect)
+userRouter.HandleFunc("/api/v1/users/me", getUserProfile).Methods("GET")
+userRouter.HandleFunc("/api/v1/users/me/friends", getUserFriends).Methods("GET")
+userRouter.HandleFunc("/api/v1/users/me/email", updateUserEmail).Methods("PATCH")
+
+adminRouter := router.PathPrefix("/").Subrouter()
+adminRouter.Use(gate.PermissionMiddleware("admin"))
+adminRouter.HandleFunc("/api/v1/users/{id}/ban", banUserByID).Methods("POST")
+adminRouter.HandleFunc("/api/v1/users/{id}/delete", deleteUserByID).Methods("DELETE")
+```
+
 
 ## Rate limiting
 To add a rate limit of 100 requests per second:
-```
+```go
 gate := g8.New().WithRateLimit(100)
 ```
 
