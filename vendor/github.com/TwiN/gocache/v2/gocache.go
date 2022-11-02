@@ -165,25 +165,27 @@ func (cache *Cache) WithEvictionPolicy(policy EvictionPolicy) *Cache {
 // is nil or not.
 //
 // If set to true (default):
-//     cache := gocache.NewCache().WithForceNilInterfaceOnNilPointer(true)
-//     cache.Set("key", (*Struct)(nil))
-//     value, _ := cache.Get("key")
-//     // the following returns true, because the interface{} was forcefully set to nil
-//     if value == nil {}
-//     // the following will panic, because the value has been casted to its type (which is nil)
-//     if value.(*Struct) == nil {}
+//
+//	cache := gocache.NewCache().WithForceNilInterfaceOnNilPointer(true)
+//	cache.Set("key", (*Struct)(nil))
+//	value, _ := cache.Get("key")
+//	// the following returns true, because the interface{} (any) was forcefully set to nil
+//	if value == nil {}
+//	// the following will panic, because the value has been casted to its type (which is nil)
+//	if value.(*Struct) == nil {}
 //
 // If set to false:
-//     cache := gocache.NewCache().WithForceNilInterfaceOnNilPointer(false)
-//     cache.Set("key", (*Struct)(nil))
-//     value, _ := cache.Get("key")
-//     // the following returns false, because the interface{} returned has a non-nil type (*Struct)
-//     if value == nil {}
-//     // the following returns true, because the value has been casted to its type
-//     if value.(*Struct) == nil {}
+//
+//	cache := gocache.NewCache().WithForceNilInterfaceOnNilPointer(false)
+//	cache.Set("key", (*Struct)(nil))
+//	value, _ := cache.Get("key")
+//	// the following returns false, because the interface{} (any) returned has a non-nil type (*Struct)
+//	if value == nil {}
+//	// the following returns true, because the value has been cast to its type
+//	if value.(*Struct) == nil {}
 //
 // In other words, if set to true, you do not need to cast the value returned from the cache to
-// to check if the value is nil.
+// check if the value is nil.
 //
 // Defaults to true
 func (cache *Cache) WithForceNilInterfaceOnNilPointer(forceNilInterfaceOnNilPointer bool) *Cache {
@@ -194,8 +196,8 @@ func (cache *Cache) WithForceNilInterfaceOnNilPointer(forceNilInterfaceOnNilPoin
 // NewCache creates a new Cache
 //
 // Should be used in conjunction with Cache.WithMaxSize, Cache.WithMaxMemoryUsage and/or Cache.WithEvictionPolicy
-//     gocache.NewCache().WithMaxSize(10000).WithEvictionPolicy(gocache.LeastRecentlyUsed)
 //
+//	gocache.NewCache().WithMaxSize(10000).WithEvictionPolicy(gocache.LeastRecentlyUsed)
 func NewCache() *Cache {
 	return &Cache{
 		maxSize:                       DefaultMaxSize,
@@ -209,7 +211,7 @@ func NewCache() *Cache {
 }
 
 // Set creates or updates a key with a given value
-func (cache *Cache) Set(key string, value interface{}) {
+func (cache *Cache) Set(key string, value any) {
 	cache.SetWithTTL(key, value, NoExpiration)
 }
 
@@ -217,7 +219,7 @@ func (cache *Cache) Set(key string, value interface{}) {
 //
 // The TTL provided must be greater than 0, or NoExpiration (-1). If a negative value that isn't -1 (NoExpiration) is
 // provided, the entry will not be created if the key doesn't exist
-func (cache *Cache) SetWithTTL(key string, value interface{}, ttl time.Duration) {
+func (cache *Cache) SetWithTTL(key string, value any, ttl time.Duration) {
 	// An interface is only nil if both its value and its type are nil, however, passing a nil pointer as an interface{}
 	// means that the interface itself is not nil, because the interface value is nil but not the type.
 	if cache.forceNilInterfaceOnNilPointer {
@@ -298,7 +300,7 @@ func (cache *Cache) SetWithTTL(key string, value interface{}, ttl time.Duration)
 }
 
 // SetAll creates or updates multiple values
-func (cache *Cache) SetAll(entries map[string]interface{}) {
+func (cache *Cache) SetAll(entries map[string]any) {
 	for key, value := range entries {
 		cache.SetWithTTL(key, value, NoExpiration)
 	}
@@ -307,7 +309,7 @@ func (cache *Cache) SetAll(entries map[string]interface{}) {
 // Get retrieves an entry using the key passed as parameter
 // If there is no such entry, the value returned will be nil and the boolean will be false
 // If there is an entry, the value returned will be the value cached and the boolean will be true
-func (cache *Cache) Get(key string) (interface{}, bool) {
+func (cache *Cache) Get(key string) (any, bool) {
 	cache.mutex.Lock()
 	entry, ok := cache.get(key)
 	if !ok {
@@ -337,7 +339,7 @@ func (cache *Cache) Get(key string) (interface{}, bool) {
 
 // GetValue retrieves an entry using the key passed as parameter
 // Unlike Get, this function only returns the value
-func (cache *Cache) GetValue(key string) interface{} {
+func (cache *Cache) GetValue(key string) any {
 	value, _ := cache.Get(key)
 	return value
 }
@@ -346,8 +348,8 @@ func (cache *Cache) GetValue(key string) interface{} {
 // All keys are returned in the map, regardless of whether they exist or not, however, entries that do not exist in the
 // cache will return nil, meaning that there is no way of determining whether a key genuinely has the value nil, or
 // whether it doesn't exist in the cache using only this function.
-func (cache *Cache) GetByKeys(keys []string) map[string]interface{} {
-	entries := make(map[string]interface{})
+func (cache *Cache) GetByKeys(keys []string) map[string]any {
+	entries := make(map[string]any)
 	for _, key := range keys {
 		entries[key], _ = cache.Get(key)
 	}
@@ -365,8 +367,8 @@ func (cache *Cache) GetByKeys(keys []string) map[string]interface{} {
 // GetKeysByPattern is a good alternative if you want to retrieve entries that you do not have the key for, as it only
 // retrieves the keys and does not trigger active eviction and has a parameter for setting a limit to the number of keys
 // you wish to retrieve.
-func (cache *Cache) GetAll() map[string]interface{} {
-	entries := make(map[string]interface{})
+func (cache *Cache) GetAll() map[string]any {
+	entries := make(map[string]any)
 	cache.mutex.Lock()
 	for key, entry := range cache.entries {
 		if entry.Expired() {
@@ -385,8 +387,9 @@ func (cache *Cache) GetAll() map[string]interface{} {
 // If the limit is above 0, the search will stop once the specified number of matching keys have been found.
 //
 // e.g.
-//     cache.GetKeysByPattern("*some*", 0) will return all keys containing "some" in them
-//     cache.GetKeysByPattern("*some*", 5) will return 5 keys (or less) containing "some" in them
+//
+//	cache.GetKeysByPattern("*some*", 0) will return all keys containing "some" in them
+//	cache.GetKeysByPattern("*some*", 5) will return 5 keys (or less) containing "some" in them
 //
 // Note that GetKeysByPattern does not trigger active evictions, nor does it count as accessing the entry (if LRU).
 // The reason for that behavior is that these two (active eviction and access) only applies when you access the value

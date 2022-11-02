@@ -131,7 +131,7 @@ func main() {
 
     cache.Set("key", "value")
     cache.SetWithTTL("key-with-ttl", "value", 60*time.Minute)
-    cache.SetAll(map[string]interface{}{"k1": "v1", "k2": "v2", "k3": "v3"})
+    cache.SetAll(map[string]any{"k1": "v1", "k2": "v2", "k3": "v3"})
 
     fmt.Println("[Count] Cache size:", cache.Count())
 
