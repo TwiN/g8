@@ -37,6 +37,8 @@ var (
 )
 
 // Cache is the core struct of gocache which contains the data as well as all relevant configuration fields
+//
+// Do not instantiate this struct directly, use NewCache instead
 type Cache struct {
 	// maxSize is the maximum amount of entries that can be in the cache at any given time
 	// By default, this is set to DefaultMaxSize
@@ -49,6 +51,10 @@ type Cache struct {
 
 	// evictionPolicy is the eviction policy
 	evictionPolicy EvictionPolicy
+
+	// defaultTTL is the default TTL for each entry
+	// Defaults to NoExpiration
+	defaultTTL time.Duration
 
 	// stats is the object that contains cache statistics/metrics
 	stats *Statistics
@@ -143,9 +149,20 @@ func (cache *Cache) WithMaxMemoryUsage(maxMemoryUsageInBytes int) *Cache {
 }
 
 // WithEvictionPolicy sets eviction algorithm.
+//
 // Defaults to FirstInFirstOut (FIFO)
 func (cache *Cache) WithEvictionPolicy(policy EvictionPolicy) *Cache {
 	cache.evictionPolicy = policy
+	return cache
+}
+
+// WithDefaultTTL sets the default TTL for each entry (unless a different TTL is specified using SetWithTTL or SetAllWithTTL)
+//
+// Defaults to NoExpiration (-1)
+func (cache *Cache) WithDefaultTTL(ttl time.Duration) *Cache {
+	if ttl > 1 {
+		cache.defaultTTL = ttl
+	}
 	return cache
 }
 
@@ -202,6 +219,7 @@ func NewCache() *Cache {
 	return &Cache{
 		maxSize:                       DefaultMaxSize,
 		evictionPolicy:                FirstInFirstOut,
+		defaultTTL:                    NoExpiration,
 		stats:                         &Statistics{},
 		entries:                       make(map[string]*Entry),
 		mutex:                         sync.RWMutex{},
@@ -212,7 +230,7 @@ func NewCache() *Cache {
 
 // Set creates or updates a key with a given value
 func (cache *Cache) Set(key string, value any) {
-	cache.SetWithTTL(key, value, NoExpiration)
+	cache.SetWithTTL(key, value, cache.defaultTTL)
 }
 
 // SetWithTTL creates or updates a key with a given value and sets an expiration time (-1 is NoExpiration)
@@ -301,8 +319,13 @@ func (cache *Cache) SetWithTTL(key string, value any, ttl time.Duration) {
 
 // SetAll creates or updates multiple values
 func (cache *Cache) SetAll(entries map[string]any) {
+	cache.SetAllWithTTL(entries, cache.defaultTTL)
+}
+
+// SetAllWithTTL creates or updates multiple values
+func (cache *Cache) SetAllWithTTL(entries map[string]any, ttl time.Duration) {
 	for key, value := range entries {
-		cache.SetWithTTL(key, value, NoExpiration)
+		cache.SetWithTTL(key, value, ttl)
 	}
 }
 
