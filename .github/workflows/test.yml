@@ -19,9 +19,9 @@ jobs:
           go-version: 1.19
       - uses: actions/checkout@v3
       - name: Test (race)
-        run: go test -mod vendor ./... -race
+        run: go test ./... -race
       - name: Test (coverage)
-        run: go test -mod vendor ./... -coverprofile=coverage.txt -covermode=atomic
+        run: go test ./... -coverprofile=coverage.txt -covermode=atomic
       - name: Codecov
         uses: codecov/codecov-action@v3.1.1
         with:
