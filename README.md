@@ -14,7 +14,7 @@ Tired of constantly re-implementing a security layer for each application? Me to
 
 ## Installation
 ```console
-go get -u github.com/TwiN/g8
+go get -u github.com/TwiN/g8/v2
 ```
 
 
