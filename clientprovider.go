@@ -1,21 +1,9 @@
 package g8
 
 import (
-	"errors"
 	"time"
 
 	"github.com/TwiN/gocache/v2"
-)
-
-var (
-	// ErrNoExpiration is the error returned by ClientProvider.StartCacheJanitor if there was an attempt to start the
-	// janitor despite no expiration being configured.
-	// To clarify, this is because the cache janitor is only useful when an expiration is set.
-	ErrNoExpiration = errors.New("no point starting the janitor if the TTL is set to not expire")
-
-	// ErrCacheNotInitialized is the error returned by ClientProvider.StartCacheJanitor if there was an attempt to start
-	// the janitor despite the cache not having been initialized using ClientProvider.WithCache
-	ErrCacheNotInitialized = errors.New("cannot start janitor because cache is not configured")
 )
 
 // ClientProvider has the task of retrieving a Client from an external source (e.g. a database) when provided with a
@@ -40,8 +28,7 @@ var (
 type ClientProvider struct {
 	getClientByTokenFunc func(token string) *Client
 
-	cache *gocache.Cache
-	ttl   time.Duration
+	cache Cache
 }
 
 // NewClientProvider creates a ClientProvider
@@ -65,11 +52,7 @@ func NewClientProvider(getClientByTokenFunc func(token string) *Client) *ClientP
 	}
 }
 
-// WithCache adds cache options to the ClientProvider.
-//
-// ttl is the time until the cache entry will expire. A TTL of gocache.NoExpiration (-1) means no expiration
-// maxSize is the maximum amount of entries that can be in the cache at any given time.
-// If a value of gocache.NoMaxSize (0) or less is provided for maxSize, there will be no maximum size.
+// WithCache enables an in-memory cache for the ClientProvider.
 //
 // Example:
 //
@@ -84,38 +67,18 @@ func NewClientProvider(getClientByTokenFunc func(token string) *Client) *ClientP
 //	})
 //	gate := g8.New().WithAuthorizationService(g8.NewAuthorizationService().WithClientProvider(clientProvider.WithCache(time.Hour, 70000)))
 func (provider *ClientProvider) WithCache(ttl time.Duration, maxSize int) *ClientProvider {
-	provider.cache = gocache.NewCache().WithEvictionPolicy(gocache.LeastRecentlyUsed).WithMaxSize(maxSize)
-	provider.ttl = ttl
+	return provider.WithCustomCache(
+		gocache.NewCache().WithEvictionPolicy(gocache.LeastRecentlyUsed).WithMaxSize(maxSize).WithDefaultTTL(ttl),
+	)
+}
+
+// WithCustomCache allows you to use a custom cache implementation instead of the default one.
+// By default, using WithCache will leverage gocache.
+//
+// Note that the custom cache must implement the Cache interface
+func (provider *ClientProvider) WithCustomCache(cache Cache) *ClientProvider {
+	provider.cache = cache
 	return provider
-}
-
-// StartCacheJanitor starts the cache janitor, which passively deletes expired cache entries in the background.
-//
-// Not really necessary unless you have a lot of clients (100000+).
-//
-// Even without the janitor, active eviction will still happen (i.e. when GetClientByToken is called, but the cache
-// entry for the given token has expired, the cache entry will be automatically deleted and re-fetched from the
-// user-defined getClientByTokenFunc)
-func (provider *ClientProvider) StartCacheJanitor() error {
-	if provider.cache == nil {
-		// Can't start the cache janitor if there's no cache
-		return ErrCacheNotInitialized
-	}
-	if provider.ttl != gocache.NoExpiration {
-		return provider.cache.StartJanitor()
-	}
-	return ErrNoExpiration
-}
-
-// StopCacheJanitor stops the cache janitor
-//
-// Not required unless your application initializes multiple providers over the course of its lifecycle.
-// In English, that means if you initialize a ClientProvider only once on application start and it stays up
-// until your application shuts down, you don't need to call this function.
-func (provider *ClientProvider) StopCacheJanitor() {
-	if provider.cache != nil {
-		provider.cache.StopJanitor()
-	}
 }
 
 // GetClientByToken retrieves a client by its token through the provided getClientByTokenFunc.
@@ -134,6 +97,6 @@ func (provider *ClientProvider) GetClientByToken(token string) *Client {
 		return client
 	}
 	client := provider.getClientByTokenFunc(token)
-	provider.cache.SetWithTTL(token, client, provider.ttl)
+	provider.cache.Set(token, client)
 	return client
 }

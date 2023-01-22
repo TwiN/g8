@@ -41,7 +41,6 @@ func NewAuthorizationService() *AuthorizationService {
 // if you plan to add multiple clients
 //
 // If you wish to configure advanced permissions, consider using WithClient instead.
-//
 func (authorizationService *AuthorizationService) WithToken(token string) *AuthorizationService {
 	authorizationService.mutex.Lock()
 	authorizationService.clients[token] = NewClient(token)
