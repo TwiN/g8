@@ -1,6 +1,7 @@
 package g8
 
 import (
+	"sync"
 	"testing"
 	"time"
 
@@ -75,18 +76,23 @@ func TestClientProvider_WithCacheAndExpiration(t *testing.T) {
 
 type customCache struct {
 	entries map[string]any
+	sync.Mutex
 }
 
 func (c *customCache) Get(key string) (value any, exists bool) {
+	c.Lock()
 	v, exists := c.entries[key]
+	c.Unlock()
 	return v, exists
 }
 
 func (c *customCache) Set(key string, value any) {
+	c.Lock()
 	if c.entries == nil {
 		c.entries = make(map[string]any)
 	}
 	c.entries[key] = value
+	c.Unlock()
 }
 
 var _ Cache = (*customCache)(nil)
