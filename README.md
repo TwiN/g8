@@ -277,3 +277,43 @@ clientProvider := g8.NewClientProvider(func(token string) *g8.Client {
 authorizationService := g8.NewAuthorizationService().WithClientProvider(clientProvider)
 gate := g8.New().WithAuthorizationService(authorizationService).WithCustomTokenExtractor(customTokenExtractorFunc)
 ```
+
+### Using a custom cache
+
+```go
+package main
+
+import (
+    g8 "github.com/TwiN/g8/v2"
+)
+
+type customCache struct {
+    entries map[string]any
+    sync.Mutex
+}
+
+func (c *customCache) Get(key string) (value any, exists bool) {
+    return nil, false
+}
+
+func (c *customCache) Set(key string, value any) {
+    // ...
+}
+
+// To verify the implementation
+var _ g8.Cache = (*customCache)(nil)
+
+func main() {
+    getClientByTokenFunc := func(token string) *g8.Client {
+        // We'll assume that the following function calls your database and returns a struct "User" that
+        // has the user's token as well as the permissions granted to said user
+        user := database.GetUserByToken(token)
+        if user != nil {
+            return g8.NewClient(user.Token).WithPermissions(user.Permissions)
+        }
+        return nil
+    }
+    // Create the provider with the custom cache
+    provider := g8.NewClientProvider(getClientByTokenFunc).WithCustomCache(&customCache{})
+}
+```
