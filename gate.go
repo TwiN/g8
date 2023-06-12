@@ -4,6 +4,8 @@ import (
 	"context"
 	"net/http"
 	"strings"
+
+	"github.com/valyala/fasthttp"
 )
 
 const (
@@ -25,7 +27,8 @@ type Gate struct {
 	authorizationService     *AuthorizationService
 	unauthorizedResponseBody []byte
 
-	customTokenExtractorFunc func(request *http.Request) string
+	customTokenExtractorFunc         func(request *http.Request) string
+	customFastHTTPTokenExtractorFunc func(request *fasthttp.Request) string
 
 	rateLimiter                 *RateLimiter
 	tooManyRequestsResponseBody []byte
@@ -88,6 +91,12 @@ func (gate *Gate) WithCustomTokenExtractor(customTokenExtractorFunc func(request
 	return gate
 }
 
+// WithCustomFastHTTPTokenExtractor is the same as WithCustomTokenExtractor, but for fasthttp.Request
+func (gate *Gate) WithCustomFastHTTPTokenExtractor(customTokenExtractorFunc func(request *fasthttp.Request) string) *Gate {
+	gate.customFastHTTPTokenExtractorFunc = customTokenExtractorFunc
+	return gate
+}
+
 // WithRateLimit adds rate limiting to the Gate
 //
 // If you just want to use a gate for rate limiting purposes:
@@ -114,6 +123,10 @@ func (gate *Gate) WithRateLimit(maximumRequestsPerSecond int) *Gate {
 // The token extracted from the request is passed to the handlerFunc request context under the key TokenContextKey
 func (gate *Gate) Protect(handler http.Handler) http.Handler {
 	return gate.ProtectWithPermissions(handler, nil)
+}
+
+func (gate *Gate) ProtectFastHTTP(handler fasthttp.RequestHandler) fasthttp.RequestHandler {
+	return gate.ProtectFastHTTPWithPermissions(handler, nil)
 }
 
 // ProtectWithPermissions secures a handler, requiring requests going through to have a valid Authorization Bearer token
@@ -163,6 +176,10 @@ func (gate *Gate) ProtectFunc(handlerFunc http.HandlerFunc) http.HandlerFunc {
 	return gate.ProtectFuncWithPermissions(handlerFunc, nil)
 }
 
+func (gate *Gate) ProtectFastHTTPFunc(handler fasthttp.RequestHandler) fasthttp.RequestHandler {
+	return gate.ProtectFastHTTPWithPermissions(handler, nil)
+}
+
 // ProtectFuncWithPermissions secures a handler, requiring requests going through to have a valid Authorization Bearer
 // token as well as a slice of permissions that must be met.
 //
@@ -188,13 +205,36 @@ func (gate *Gate) ProtectFuncWithPermissions(handlerFunc http.HandlerFunc, permi
 		if gate.authorizationService != nil {
 			token := gate.ExtractTokenFromRequest(request)
 			if !gate.authorizationService.IsAuthorized(token, permissions) {
-				writer.WriteHeader(http.StatusUnauthorized)
+				writer.WriteHeader(http.StatusUnauthorized) // XXX: Should we return 401 if no client and 403 if client but insufficient permissions?
 				_, _ = writer.Write(gate.unauthorizedResponseBody)
 				return
 			}
 			request = request.WithContext(context.WithValue(request.Context(), TokenContextKey, token))
 		}
 		handlerFunc(writer, request)
+	}
+}
+
+// ProtectFastHTTPWithPermissions is the same as ProtectFuncWithPermissions, but for fasthttp
+func (gate *Gate) ProtectFastHTTPWithPermissions(handler fasthttp.RequestHandler, permissions []string) fasthttp.RequestHandler {
+	return func(ctx *fasthttp.RequestCtx) {
+		if gate.rateLimiter != nil {
+			if !gate.rateLimiter.Try() {
+				ctx.SetStatusCode(429)
+				_, _ = ctx.Write(gate.tooManyRequestsResponseBody)
+				return
+			}
+		}
+		if gate.authorizationService != nil {
+			token := gate.ExtractTokenFromFastHTTPRequest(&ctx.Request)
+			if !gate.authorizationService.IsAuthorized(token, permissions) {
+				ctx.SetStatusCode(401) // XXX: Should we return 401 if no client and 403 if client but insufficient permissions?
+				_, _ = ctx.Write(gate.unauthorizedResponseBody)
+				return
+			}
+			ctx.SetUserValue(TokenContextKey, token)
+		}
+		handler(ctx)
 	}
 }
 
@@ -219,6 +259,15 @@ func (gate *Gate) ExtractTokenFromRequest(request *http.Request) string {
 		return gate.customTokenExtractorFunc(request)
 	}
 	return strings.TrimPrefix(request.Header.Get(AuthorizationHeader), "Bearer ")
+}
+
+// ExtractTokenFromFastHTTPRequest is the same as ExtractTokenFromRequest, but for fasthttp.Request
+func (gate *Gate) ExtractTokenFromFastHTTPRequest(request *fasthttp.Request) string {
+	if gate.customFastHTTPTokenExtractorFunc != nil {
+		// A custom token extractor function is defined, so we'll use it instead of the default token extraction logic
+		return gate.customFastHTTPTokenExtractorFunc(request)
+	}
+	return strings.TrimPrefix(string(request.Header.Peek(AuthorizationHeader)), "Bearer ")
 }
 
 // PermissionMiddleware is a middleware that behaves like ProtectWithPermission, but it is meant to be used
