@@ -23,7 +23,7 @@ jobs:
       - name: Test (coverage)
         run: go test ./... -coverprofile=coverage.txt -covermode=atomic
       - name: Codecov
-        uses: codecov/codecov-action@v5.1.1
+        uses: codecov/codecov-action@v5.1.2
         with:
           files: ./coverage.txt
           token: ${{ secrets.CODECOV_TOKEN }}
