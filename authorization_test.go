@@ -4,105 +4,105 @@ import "testing"
 
 func TestAuthorizationService_IsAuthorized(t *testing.T) {
 	authorizationService := NewAuthorizationService().WithToken("token")
-	if !authorizationService.IsAuthorized("token", nil) {
+	if _, authorized := authorizationService.Authorize("token", nil); !authorized {
 		t.Error("should've returned true")
 	}
-	if authorizationService.IsAuthorized("bad-token", nil) {
+	if _, authorized := authorizationService.Authorize("bad-token", nil); authorized {
 		t.Error("should've returned false")
 	}
-	if authorizationService.IsAuthorized("token", []string{"admin"}) {
+	if _, authorized := authorizationService.Authorize("token", []string{"admin"}); authorized {
 		t.Error("should've returned false")
 	}
-	if authorizationService.IsAuthorized("", nil) {
+	if _, authorized := authorizationService.Authorize("", nil); authorized {
 		t.Error("should've returned false")
 	}
 }
 
 func TestAuthorizationService_IsAuthorizedWithPermissions(t *testing.T) {
 	authorizationService := NewAuthorizationService().WithClient(NewClient("token").WithPermissions([]string{"a", "b"}))
-	if !authorizationService.IsAuthorized("token", nil) {
+	if _, authorized := authorizationService.Authorize("token", nil); !authorized {
 		t.Error("should've returned true")
 	}
-	if !authorizationService.IsAuthorized("token", []string{"a"}) {
+	if _, authorized := authorizationService.Authorize("token", []string{"a"}); !authorized {
 		t.Error("should've returned true")
 	}
-	if !authorizationService.IsAuthorized("token", []string{"b"}) {
+	if _, authorized := authorizationService.Authorize("token", []string{"b"}); !authorized {
 		t.Error("should've returned true")
 	}
-	if !authorizationService.IsAuthorized("token", []string{"a", "b"}) {
+	if _, authorized := authorizationService.Authorize("token", []string{"a", "b"}); !authorized {
 		t.Error("should've returned true")
 	}
-	if authorizationService.IsAuthorized("token", []string{"c"}) {
+	if _, authorized := authorizationService.Authorize("token", []string{"c"}); authorized {
 		t.Error("should've returned false")
 	}
-	if authorizationService.IsAuthorized("token", []string{"a", "c"}) {
+	if _, authorized := authorizationService.Authorize("token", []string{"a", "c"}); authorized {
 		t.Error("should've returned false")
 	}
-	if authorizationService.IsAuthorized("bad-token", nil) {
+	if _, authorized := authorizationService.Authorize("bad-token", nil); authorized {
 		t.Error("should've returned false")
 	}
-	if authorizationService.IsAuthorized("bad-token", []string{"a"}) {
+	if _, authorized := authorizationService.Authorize("bad-token", []string{"a"}); authorized {
 		t.Error("should've returned false")
 	}
-	if authorizationService.IsAuthorized("", []string{"a"}) {
+	if _, authorized := authorizationService.Authorize("", []string{"a"}); authorized {
 		t.Error("should've returned false")
 	}
 }
 
 func TestAuthorizationService_WithToken(t *testing.T) {
 	authorizationService := NewAuthorizationService().WithToken("token")
-	if !authorizationService.IsAuthorized("token", nil) {
+	if _, authorized := authorizationService.Authorize("token", nil); !authorized {
 		t.Error("should've returned true")
 	}
-	if authorizationService.IsAuthorized("bad-token", nil) {
+	if _, authorized := authorizationService.Authorize("bad-token", nil); authorized {
 		t.Error("should've returned false")
 	}
-	if authorizationService.IsAuthorized("token", []string{"admin"}) {
+	if _, authorized := authorizationService.Authorize("token", []string{"admin"}); authorized {
 		t.Error("should've returned false")
 	}
 }
 
 func TestAuthorizationService_WithTokens(t *testing.T) {
 	authorizationService := NewAuthorizationService().WithTokens([]string{"1", "2"})
-	if !authorizationService.IsAuthorized("1", nil) {
+	if _, authorized := authorizationService.Authorize("1", nil); !authorized {
 		t.Error("should've returned true")
 	}
-	if !authorizationService.IsAuthorized("2", nil) {
+	if _, authorized := authorizationService.Authorize("2", nil); !authorized {
 		t.Error("should've returned true")
 	}
-	if authorizationService.IsAuthorized("3", nil) {
+	if _, authorized := authorizationService.Authorize("3", nil); authorized {
 		t.Error("should've returned false")
 	}
 }
 
 func TestAuthorizationService_WithClient(t *testing.T) {
 	authorizationService := NewAuthorizationService().WithClient(NewClient("token").WithPermissions([]string{"a", "b"}))
-	if !authorizationService.IsAuthorized("token", []string{"a", "b"}) {
+	if _, authorized := authorizationService.Authorize("token", []string{"a", "b"}); !authorized {
 		t.Error("should've returned true")
 	}
-	if !authorizationService.IsAuthorized("token", []string{"a"}) {
+	if _, authorized := authorizationService.Authorize("token", []string{"a"}); !authorized {
 		t.Error("should've returned true")
 	}
-	if !authorizationService.IsAuthorized("token", []string{"b"}) {
+	if _, authorized := authorizationService.Authorize("token", []string{"b"}); !authorized {
 		t.Error("should've returned true")
 	}
-	if authorizationService.IsAuthorized("token", []string{"c"}) {
+	if _, authorized := authorizationService.Authorize("token", []string{"c"}); authorized {
 		t.Error("should've returned false")
 	}
 }
 
 func TestAuthorizationService_WithClients(t *testing.T) {
 	authorizationService := NewAuthorizationService().WithClients([]*Client{NewClient("1").WithPermission("a"), NewClient("2").WithPermission("b")})
-	if !authorizationService.IsAuthorized("1", []string{"a"}) {
+	if _, authorized := authorizationService.Authorize("1", []string{"a"}); !authorized {
 		t.Error("should've returned true")
 	}
-	if !authorizationService.IsAuthorized("2", []string{"b"}) {
+	if _, authorized := authorizationService.Authorize("2", []string{"b"}); !authorized {
 		t.Error("should've returned true")
 	}
-	if authorizationService.IsAuthorized("1", []string{"b"}) {
+	if _, authorized := authorizationService.Authorize("1", []string{"b"}); authorized {
 		t.Error("should've returned false")
 	}
-	if authorizationService.IsAuthorized("2", []string{"a"}) {
+	if _, authorized := authorizationService.Authorize("2", []string{"a"}); authorized {
 		t.Error("should've returned false")
 	}
 }

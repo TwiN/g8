@@ -11,7 +11,7 @@ import (
 var (
 	getClientByTokenFunc = func(token string) *Client {
 		if token == "valid-token" {
-			return &Client{Token: token}
+			return NewClient("valid-token").WithData("client-data")
 		}
 		return nil
 	}
@@ -21,6 +21,8 @@ func TestClientProvider_GetClientByToken(t *testing.T) {
 	provider := NewClientProvider(getClientByTokenFunc)
 	if client := provider.GetClientByToken("valid-token"); client == nil {
 		t.Error("should've returned a client")
+	} else if client.Data != "client-data" {
+		t.Error("expected client data to be 'client-data', got", client.Data)
 	}
 	if client := provider.GetClientByToken("invalid-token"); client != nil {
 		t.Error("should've returned nil")

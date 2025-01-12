@@ -104,24 +104,27 @@ func (authorizationService *AuthorizationService) WithClientProvider(provider *C
 	return authorizationService
 }
 
-// IsAuthorized checks whether a client with a given token exists and has the permissions required.
+// Authorize checks whether a client with a given token exists and has the permissions required.
 //
 // If permissionsRequired is nil or empty and a client with the given token exists, said client will have access to all
 // handlers that are not protected by a given permission.
-func (authorizationService *AuthorizationService) IsAuthorized(token string, permissionsRequired []string) bool {
+//
+// Returns whether the client is authorized, and if true, the client that was authorized.
+func (authorizationService *AuthorizationService) Authorize(token string, permissionsRequired []string) (client *Client, authorized bool) {
 	if len(token) == 0 {
-		return false
+		return nil, false
 	}
 	authorizationService.mutex.RLock()
-	client, _ := authorizationService.clients[token]
+	client, _ = authorizationService.clients[token]
 	authorizationService.mutex.RUnlock()
 	// If there's no clients with the given token directly stored in the AuthorizationService, fall back to the
 	// client provider, if there's one configured.
 	if client == nil && authorizationService.clientProvider != nil {
 		client = authorizationService.clientProvider.GetClientByToken(token)
 	}
-	if client != nil {
-		return client.HasPermissions(permissionsRequired)
+	if client != nil && client.HasPermissions(permissionsRequired) {
+		// If the client has the required permissions, return true and the client
+		return client, true
 	}
-	return false
+	return nil, false
 }

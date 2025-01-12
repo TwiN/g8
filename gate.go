@@ -16,8 +16,11 @@ const (
 	// DefaultTooManyRequestsResponseBody is the default response body returned if a request exceeded the allowed rate limit
 	DefaultTooManyRequestsResponseBody = "too many requests"
 
-	// TokenContextKey is the key used to store the token in the context.
+	// TokenContextKey is the key used to store the client's token in the context.
 	TokenContextKey = "g8.token"
+
+	// DataContextKey is the key used to store the client's data in the context.
+	DataContextKey = "g8.data"
 )
 
 // Gate is lock to the front door of your API, letting only those you allow through.
@@ -187,12 +190,16 @@ func (gate *Gate) ProtectFuncWithPermissions(handlerFunc http.HandlerFunc, permi
 		}
 		if gate.authorizationService != nil {
 			token := gate.ExtractTokenFromRequest(request)
-			if !gate.authorizationService.IsAuthorized(token, permissions) {
+			if client, authorized := gate.authorizationService.Authorize(token, permissions); !authorized {
 				writer.WriteHeader(http.StatusUnauthorized)
 				_, _ = writer.Write(gate.unauthorizedResponseBody)
 				return
+			} else {
+				request = request.WithContext(context.WithValue(request.Context(), TokenContextKey, token))
+				if client != nil && client.Data != nil {
+					request = request.WithContext(context.WithValue(request.Context(), DataContextKey, client.Data))
+				}
 			}
-			request = request.WithContext(context.WithValue(request.Context(), TokenContextKey, token))
 		}
 		handlerFunc(writer, request)
 	}
