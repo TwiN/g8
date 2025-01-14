@@ -2,7 +2,7 @@ package g8
 
 import "testing"
 
-func TestAuthorizationService_IsAuthorized(t *testing.T) {
+func TestAuthorizationService_Authorize(t *testing.T) {
 	authorizationService := NewAuthorizationService().WithToken("token")
 	if _, authorized := authorizationService.Authorize("token", nil); !authorized {
 		t.Error("should've returned true")
@@ -18,7 +18,7 @@ func TestAuthorizationService_IsAuthorized(t *testing.T) {
 	}
 }
 
-func TestAuthorizationService_IsAuthorizedWithPermissions(t *testing.T) {
+func TestAuthorizationService_AuthorizeWithPermissions(t *testing.T) {
 	authorizationService := NewAuthorizationService().WithClient(NewClient("token").WithPermissions([]string{"a", "b"}))
 	if _, authorized := authorizationService.Authorize("token", nil); !authorized {
 		t.Error("should've returned true")
