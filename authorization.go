@@ -109,7 +109,7 @@ func (authorizationService *AuthorizationService) WithClientProvider(provider *C
 // If permissionsRequired is nil or empty and a client with the given token exists, said client will have access to all
 // handlers that are not protected by a given permission.
 //
-// Returns whether the client is authorized, and if true, the client that was authorized.
+// Returns the client is authorized (or nil if no client was authorized), as well as whether the token is authorized
 func (authorizationService *AuthorizationService) Authorize(token string, permissionsRequired []string) (client *Client, authorized bool) {
 	if len(token) == 0 {
 		return nil, false
