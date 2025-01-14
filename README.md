@@ -1,6 +1,6 @@
 # g8
 
-![test](https://github.com/TwiN/g8/workflows/test/badge.svg?branch=master) 
+![test](https://github.com/TwiN/g8/actions/workflows/test.yml/badge.svg?branch=master)
 [![Go Report Card](https://goreportcard.com/badge/github.com/TwiN/g8)](https://goreportcard.com/report/github.com/TwiN/g8/v3)
 [![codecov](https://codecov.io/gh/TwiN/g8/branch/master/graph/badge.svg)](https://codecov.io/gh/TwiN/g8)
 [![Go version](https://img.shields.io/github/go-mod/go-version/TwiN/g8.svg)](https://github.com/TwiN/g8)
