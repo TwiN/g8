@@ -147,7 +147,7 @@ func BenchmarkGate_ProtectWithClientProviderConcurrently(b *testing.B) {
 	gate := New().WithAuthorizationService(NewAuthorizationService().WithClientProvider(mockClientProvider))
 
 	request, _ := http.NewRequest("GET", "/handle", http.NoBody)
-	request.Header.Add("Authorization", fmt.Sprintf("Bearer %s", TestProviderToken))
+	request.Header.Add("Authorization", fmt.Sprintf("Bearer %s", TestProviderClientToken))
 
 	firstBadRequest, _ := http.NewRequest("GET", "/handle", http.NoBody)
 	firstBadRequest.Header.Set("Authorization", fmt.Sprintf("Bearer %s", "bad-token-1"))

@@ -1,4 +1,4 @@
-module github.com/TwiN/g8/v2
+module github.com/TwiN/g8/v3
 
 go 1.23.3
 

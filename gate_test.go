@@ -13,16 +13,18 @@ import (
 const (
 	FirstTestProviderClientPermission  = "permission-1"
 	SecondTestProviderClientPermission = "permission-2"
-	TestProviderToken                  = "token-from-provider"
+	TestProviderClientToken            = "client-token-from-provider"
+	TestProviderClientData             = "client-data-from-provider"
 )
 
 var (
 	mockClientProvider = NewClientProvider(func(token string) *Client {
 		// We'll pretend that there's only one token that's valid in the client provider, every other token
 		// returns nil
-		if token == TestProviderToken {
+		if token == TestProviderClientToken {
 			return &Client{
-				Token:       TestProviderToken,
+				Token:       TestProviderClientToken,
+				Data:        TestProviderClientData,
 				Permissions: []string{FirstTestProviderClientPermission, SecondTestProviderClientPermission},
 			}
 		}
@@ -134,7 +136,7 @@ func TestGate_ProtectMultipleTimes(t *testing.T) {
 func TestGate_ProtectWithValidTokenExposedThroughClientProvider(t *testing.T) {
 	gate := New().WithAuthorizationService(NewAuthorizationService().WithClientProvider(mockClientProvider))
 	request, _ := http.NewRequest("GET", "/handle", http.NoBody)
-	request.Header.Add("Authorization", fmt.Sprintf("Bearer %s", TestProviderToken))
+	request.Header.Add("Authorization", fmt.Sprintf("Bearer %s", TestProviderClientToken))
 	responseRecorder := httptest.NewRecorder()
 
 	router := http.NewServeMux()
@@ -149,7 +151,7 @@ func TestGate_ProtectWithValidTokenExposedThroughClientProvider(t *testing.T) {
 func TestGate_ProtectWithValidTokenExposedThroughClientProviderWithCache(t *testing.T) {
 	gate := New().WithAuthorizationService(NewAuthorizationService().WithClientProvider(mockClientProvider.WithCache(60*time.Minute, 70000)))
 	request, _ := http.NewRequest("GET", "/handle", http.NoBody)
-	request.Header.Add("Authorization", fmt.Sprintf("Bearer %s", TestProviderToken))
+	request.Header.Add("Authorization", fmt.Sprintf("Bearer %s", TestProviderClientToken))
 	responseRecorder := httptest.NewRecorder()
 
 	router := http.NewServeMux()
@@ -179,7 +181,7 @@ func TestGate_ProtectWithInvalidTokenWhenUsingClientProvider(t *testing.T) {
 func TestGate_ProtectWithPermissionsWhenValidTokenAndSufficientPermissionsWhileUsingClientProvider(t *testing.T) {
 	gate := New().WithAuthorizationService(NewAuthorizationService().WithClientProvider(mockClientProvider))
 	request, _ := http.NewRequest("GET", "/handle", http.NoBody)
-	request.Header.Add("Authorization", fmt.Sprintf("Bearer %s", TestProviderToken))
+	request.Header.Add("Authorization", fmt.Sprintf("Bearer %s", TestProviderClientToken))
 	responseRecorder := httptest.NewRecorder()
 
 	router := http.NewServeMux()
@@ -197,7 +199,7 @@ func TestGate_ProtectWithPermissionsWhenValidTokenAndSufficientPermissionsWhileU
 func TestGate_ProtectWithPermissionsWhenValidTokenAndInsufficientPermissionsWhileUsingClientProvider(t *testing.T) {
 	gate := New().WithAuthorizationService(NewAuthorizationService().WithClientProvider(mockClientProvider))
 	request, _ := http.NewRequest("GET", "/handle", http.NoBody)
-	request.Header.Add("Authorization", fmt.Sprintf("Bearer %s", TestProviderToken))
+	request.Header.Add("Authorization", fmt.Sprintf("Bearer %s", TestProviderClientToken))
 	responseRecorder := httptest.NewRecorder()
 
 	router := http.NewServeMux()
@@ -487,13 +489,16 @@ func TestGate_WithCustomTokenExtractor(t *testing.T) {
 	gate := New().WithAuthorizationService(authorizationService).WithCustomTokenExtractor(customTokenExtractorFunc)
 
 	request, _ := http.NewRequest("GET", "/handle", http.NoBody)
-	request.AddCookie(&http.Cookie{Name: "session", Value: TestProviderToken})
+	request.AddCookie(&http.Cookie{Name: "session", Value: TestProviderClientToken})
 	responseRecorder := httptest.NewRecorder()
 
 	router := http.NewServeMux()
 	router.Handle("/handle", gate.ProtectFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Context().Value(TokenContextKey) != TestProviderToken {
+		if r.Context().Value(TokenContextKey) != TestProviderClientToken {
 			t.Errorf("token should have been passed to the request context")
+		}
+		if r.Context().Value(DataContextKey) != TestProviderClientData {
+			t.Errorf("data should have been passed to the request context")
 		}
 		w.WriteHeader(http.StatusOK)
 	}))
@@ -512,13 +517,16 @@ func TestGateWithCustomHeader(t *testing.T) {
 	gate := New().WithAuthorizationService(authorizationService).WithCustomTokenExtractor(customTokenExtractorFunc)
 
 	request, _ := http.NewRequest("GET", "/handle", http.NoBody)
-	request.Header.Add("X-API-Token", TestProviderToken)
+	request.Header.Add("X-API-Token", TestProviderClientToken)
 	responseRecorder := httptest.NewRecorder()
 
 	router := http.NewServeMux()
 	router.Handle("/handle", gate.ProtectFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Context().Value(TokenContextKey) != TestProviderToken {
+		if r.Context().Value(TokenContextKey) != TestProviderClientToken {
 			t.Errorf("token should have been passed to the request context")
+		}
+		if r.Context().Value(DataContextKey) != TestProviderClientData {
+			t.Errorf("data should have been passed to the request context")
 		}
 		w.WriteHeader(http.StatusOK)
 	}))

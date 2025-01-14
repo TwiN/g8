@@ -1,10 +1,10 @@
 # g8
 
 ![test](https://github.com/TwiN/g8/workflows/test/badge.svg?branch=master) 
-[![Go Report Card](https://goreportcard.com/badge/github.com/TwiN/g8)](https://goreportcard.com/report/github.com/TwiN/g8/v2)
+[![Go Report Card](https://goreportcard.com/badge/github.com/TwiN/g8)](https://goreportcard.com/report/github.com/TwiN/g8/v3)
 [![codecov](https://codecov.io/gh/TwiN/g8/branch/master/graph/badge.svg)](https://codecov.io/gh/TwiN/g8)
 [![Go version](https://img.shields.io/github/go-mod/go-version/TwiN/g8.svg)](https://github.com/TwiN/g8)
-[![Go Reference](https://pkg.go.dev/badge/github.com/TwiN/g8.svg)](https://pkg.go.dev/github.com/TwiN/g8/v2)
+[![Go Reference](https://pkg.go.dev/badge/github.com/TwiN/g8.svg)](https://pkg.go.dev/github.com/TwiN/g8/v3)
 [![Follow TwiN](https://img.shields.io/github/followers/TwiN?label=Follow&style=social)](https://github.com/TwiN)
 
 g8, pronounced gate, is a simple Go library for protecting HTTP handlers.
@@ -14,7 +14,7 @@ Tired of constantly re-implementing a security layer for each application? Me to
 
 ## Installation
 ```console
-go get -u github.com/TwiN/g8/v2
+go get -u github.com/TwiN/g8/v3
 ```
 
 
@@ -284,7 +284,7 @@ gate := g8.New().WithAuthorizationService(authorizationService).WithCustomTokenE
 package main
 
 import (
-    g8 "github.com/TwiN/g8/v2"
+    g8 "github.com/TwiN/g8/v3"
 )
 
 type customCache struct {
@@ -309,7 +309,7 @@ func main() {
         // has the user's token as well as the permissions granted to said user
         user := database.GetUserByToken(token)
         if user != nil {
-            return g8.NewClient(user.Token).WithPermissions(user.Permissions)
+            return g8.NewClient(user.Token).WithPermissions(user.Permissions).WithData(user.Data)
         }
         return nil
     }
