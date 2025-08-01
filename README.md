@@ -205,6 +205,120 @@ http.Handle("/handle", gate.ProtectFunc(func(w http.ResponseWriter, r *http.Requ
 ```
 
 ## Examples
+
+### Protecting a handler using session cookie
+If you want to only allow authenticated users to access a handler, you can use a custom token extractor function 
+combined with a client provider.
+
+First, we'll create a function to extract the session ID from the session cookie. While a session ID does not 
+theoretically refer to a token, g8 uses the term `token` as a blanket term to refer to any string that can be used to
+identify a client.
+```go
+customTokenExtractorFunc := func(request *http.Request) string {
+    sessionCookie, err := request.Cookie("session")
+    if err != nil {
+        return ""
+    }
+    return sessionCookie.Value
+}
+```
+
+Next, we need to create a client provider that will validate our token, which refers to the session ID in this case.
+```go
+clientProvider := g8.NewClientProvider(func(token string) *g8.Client {
+    // We'll assume that the following function calls your database and validates whether the session is valid.
+    isSessionValid := database.CheckIfSessionIsValid(token)
+    if !isSessionValid {
+        return nil // Returning nil will cause the gate to return a 401 Unauthorized.
+    }
+    // You could also retrieve the user and their permissions if you wanted instead, but for this example,
+    // all we care about is confirming whether the session is valid or not.
+    return g8.NewClient(token)
+})
+```
+
+Keep in mind that you can get really creative with the client provider above.
+For instance, you could refresh the session's expiration time, which will allow the user to stay logged in for 
+as long as they're active.
+
+You're also not limited to using something stateful like the example above. You could use a JWT and have your client
+provider validate said JWT.
+
+Finally, we can create the authorization service and the gate:
+```go
+authorizationService := g8.NewAuthorizationService().WithClientProvider(clientProvider)
+gate := g8.New().WithAuthorizationService(authorizationService).WithCustomTokenExtractor(customTokenExtractorFunc)
+```
+
+If you need to access the token (session ID in this case) from the protected handlers, you can retrieve it from the
+request context by using the key `g8.TokenContextKey`:
+```go
+http.Handle("/handle", gate.ProtectFunc(func(w http.ResponseWriter, r *http.Request) {
+    sessionID, _ := r.Context().Value(g8.TokenContextKey).(string)
+    // ...
+}))
+```
+
+### Using a custom header
+The logic is the same as the example above:
+```go
+customTokenExtractorFunc := func(request *http.Request) string {
+    return request.Header.Get("X-API-Token")
+}
+
+clientProvider := g8.NewClientProvider(func(token string) *g8.Client {
+    // We'll assume that the following function calls your database and returns a struct "User" that 
+    // has the user's token as well as the permissions granted to said user
+    user := database.GetUserByToken(token)
+    if user != nil {
+        return g8.NewClient(user.Token).WithPermissions(user.Permissions)
+    }
+    return nil
+})
+authorizationService := g8.NewAuthorizationService().WithClientProvider(clientProvider)
+gate := g8.New().WithAuthorizationService(authorizationService).WithCustomTokenExtractor(customTokenExtractorFunc)
+```
+
+### Using a custom cache
+
+```go
+package main
+
+import (
+    g8 "github.com/TwiN/g8/v3"
+)
+
+type customCache struct {
+    entries map[string]any
+    sync.Mutex
+}
+
+func (c *customCache) Get(key string) (value any, exists bool) {
+    return nil, false
+}
+
+func (c *customCache) Set(key string, value any) {
+    // ...
+}
+
+// To verify the implementation
+var _ g8.Cache = (*customCache)(nil)
+
+func main() {
+    getClientByTokenFunc := func(token string) *g8.Client {
+        // We'll assume that the following function calls your database and returns a struct "User" that
+        // has the user's token as well as the permissions granted to said user
+        user := database.GetUserByToken(token)
+        if user != nil {
+            return g8.NewClient(user.Token).WithPermissions(user.Permissions).WithData(user.Data)
+        }
+        return nil
+    }
+    // Create the provider with the custom cache
+    provider := g8.NewClientProvider(getClientByTokenFunc).WithCustomCache(&customCache{})
+}
+```
+
 ### Complete net/http server example
 Here's a complete example showing how to build a REST API server using standard net/http:
 
@@ -382,118 +496,5 @@ func main() {
     }, "user"))
 
     http.ListenAndServe(":8080", mux)
-}
-```
-
-### Protecting a handler using session cookie
-If you want to only allow authenticated users to access a handler, you can use a custom token extractor function 
-combined with a client provider.
-
-First, we'll create a function to extract the session ID from the session cookie. While a session ID does not 
-theoretically refer to a token, g8 uses the term `token` as a blanket term to refer to any string that can be used to
-identify a client.
-```go
-customTokenExtractorFunc := func(request *http.Request) string {
-    sessionCookie, err := request.Cookie("session")
-    if err != nil {
-        return ""
-    }
-    return sessionCookie.Value
-}
-```
-
-Next, we need to create a client provider that will validate our token, which refers to the session ID in this case.
-```go
-clientProvider := g8.NewClientProvider(func(token string) *g8.Client {
-    // We'll assume that the following function calls your database and validates whether the session is valid.
-    isSessionValid := database.CheckIfSessionIsValid(token)
-    if !isSessionValid {
-        return nil // Returning nil will cause the gate to return a 401 Unauthorized.
-    }
-    // You could also retrieve the user and their permissions if you wanted instead, but for this example,
-    // all we care about is confirming whether the session is valid or not.
-    return g8.NewClient(token)
-})
-```
-
-Keep in mind that you can get really creative with the client provider above.
-For instance, you could refresh the session's expiration time, which will allow the user to stay logged in for 
-as long as they're active.
-
-You're also not limited to using something stateful like the example above. You could use a JWT and have your client
-provider validate said JWT.
-
-Finally, we can create the authorization service and the gate:
-```go
-authorizationService := g8.NewAuthorizationService().WithClientProvider(clientProvider)
-gate := g8.New().WithAuthorizationService(authorizationService).WithCustomTokenExtractor(customTokenExtractorFunc)
-```
-
-If you need to access the token (session ID in this case) from the protected handlers, you can retrieve it from the
-request context by using the key `g8.TokenContextKey`:
-```go
-http.Handle("/handle", gate.ProtectFunc(func(w http.ResponseWriter, r *http.Request) {
-    sessionID, _ := r.Context().Value(g8.TokenContextKey).(string)
-    // ...
-}))
-```
-
-### Using a custom header
-The logic is the same as the example above:
-```go
-customTokenExtractorFunc := func(request *http.Request) string {
-    return request.Header.Get("X-API-Token")
-}
-
-clientProvider := g8.NewClientProvider(func(token string) *g8.Client {
-    // We'll assume that the following function calls your database and returns a struct "User" that 
-    // has the user's token as well as the permissions granted to said user
-    user := database.GetUserByToken(token)
-    if user != nil {
-        return g8.NewClient(user.Token).WithPermissions(user.Permissions)
-    }
-    return nil
-})
-authorizationService := g8.NewAuthorizationService().WithClientProvider(clientProvider)
-gate := g8.New().WithAuthorizationService(authorizationService).WithCustomTokenExtractor(customTokenExtractorFunc)
-```
-
-### Using a custom cache
-
-```go
-package main
-
-import (
-    g8 "github.com/TwiN/g8/v3"
-)
-
-type customCache struct {
-    entries map[string]any
-    sync.Mutex
-}
-
-func (c *customCache) Get(key string) (value any, exists bool) {
-    return nil, false
-}
-
-func (c *customCache) Set(key string, value any) {
-    // ...
-}
-
-// To verify the implementation
-var _ g8.Cache = (*customCache)(nil)
-
-func main() {
-    getClientByTokenFunc := func(token string) *g8.Client {
-        // We'll assume that the following function calls your database and returns a struct "User" that
-        // has the user's token as well as the permissions granted to said user
-        user := database.GetUserByToken(token)
-        if user != nil {
-            return g8.NewClient(user.Token).WithPermissions(user.Permissions).WithData(user.Data)
-        }
-        return nil
-    }
-    // Create the provider with the custom cache
-    provider := g8.NewClientProvider(getClientByTokenFunc).WithCustomCache(&customCache{})
 }
 ```
