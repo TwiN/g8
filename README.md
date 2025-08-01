@@ -205,6 +205,7 @@ http.Handle("/handle", gate.ProtectFunc(func(w http.ResponseWriter, r *http.Requ
 ```
 
 ## Examples
+
 ### Protecting a handler using session cookie
 If you want to only allow authenticated users to access a handler, you can use a custom token extractor function 
 combined with a client provider.
@@ -315,5 +316,185 @@ func main() {
     }
     // Create the provider with the custom cache
     provider := g8.NewClientProvider(getClientByTokenFunc).WithCustomCache(&customCache{})
+}
+```
+
+### Complete net/http server example
+Here's a complete example showing how to build a REST API server using standard net/http:
+
+```go
+package main
+
+import (
+    "encoding/json"
+    "fmt"
+    "log"
+    "net/http"
+
+    "github.com/TwiN/g8/v3"
+)
+
+func main() {
+    // Create authorization service with different clients and permissions
+    authService := g8.NewAuthorizationService().
+        WithToken("public-token").                                              // Basic token with no special permissions
+        WithClient(g8.NewClient("admin-token").WithPermission("admin")).        // Admin token
+        WithClient(g8.NewClient("user-token").WithPermissions([]string{"read", "write"})) // User token with specific permissions
+
+    // Create gate with authorization and rate limiting
+    gate := g8.New().
+        WithAuthorizationService(authService).
+        WithRateLimit(100) // 100 requests per second
+
+    // Set up routes
+    mux := http.NewServeMux()
+    
+    // Public endpoints (no protection)
+    mux.HandleFunc("/", homeHandler)
+    mux.HandleFunc("/health", healthHandler)
+    
+    // Protected endpoints using gate.ProtectFunc
+    mux.HandleFunc("/api/profile", gate.ProtectFunc(profileHandler))
+    mux.HandleFunc("/api/data", gate.ProtectFunc(dataHandler))
+    
+    // Admin-only endpoints using gate.ProtectFuncWithPermission
+    mux.HandleFunc("/api/admin/users", gate.ProtectFuncWithPermission(adminUsersHandler, "admin"))
+    mux.HandleFunc("/api/admin/stats", gate.ProtectFuncWithPermission(adminStatsHandler, "admin"))
+    
+    // Endpoints requiring specific permissions
+    mux.HandleFunc("/api/read-data", gate.ProtectFuncWithPermissions(readDataHandler, []string{"read"}))
+    mux.HandleFunc("/api/write-data", gate.ProtectFuncWithPermissions(writeDataHandler, []string{"write"}))
+    mux.HandleFunc("/api/manage-data", gate.ProtectFuncWithPermissions(manageDataHandler, []string{"read", "write"}))
+
+    fmt.Println("Server starting on :8080")
+    fmt.Println("Try these endpoints:")
+    fmt.Println("  curl http://localhost:8080/")
+    fmt.Println("  curl -H 'Authorization: Bearer public-token' http://localhost:8080/api/profile")
+    fmt.Println("  curl -H 'Authorization: Bearer admin-token' http://localhost:8080/api/admin/users")
+    fmt.Println("  curl -H 'Authorization: Bearer user-token' http://localhost:8080/api/read-data")
+    
+    log.Fatal(http.ListenAndServe(":8080", mux))
+}
+
+func homeHandler(w http.ResponseWriter, r *http.Request) {
+    json.NewEncoder(w).Encode(map[string]string{
+        "message": "Welcome to the API",
+        "status":  "public",
+    })
+}
+
+func healthHandler(w http.ResponseWriter, r *http.Request) {
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(map[string]string{"status": "healthy"})
+}
+
+func profileHandler(w http.ResponseWriter, r *http.Request) {
+    // Extract token from context (added by g8)
+    token, _ := r.Context().Value(g8.TokenContextKey).(string)
+    
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(map[string]interface{}{
+        "message": "Profile data",
+        "token":   token,
+        "user":    "authenticated user",
+    })
+}
+
+func dataHandler(w http.ResponseWriter, r *http.Request) {
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(map[string]interface{}{
+        "data": []string{"item1", "item2", "item3"},
+    })
+}
+
+func adminUsersHandler(w http.ResponseWriter, r *http.Request) {
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(map[string]interface{}{
+        "users": []map[string]interface{}{
+            {"id": 1, "name": "Alice", "role": "admin"},
+            {"id": 2, "name": "Bob", "role": "user"},
+        },
+    })
+}
+
+func adminStatsHandler(w http.ResponseWriter, r *http.Request) {
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(map[string]interface{}{
+        "stats": map[string]int{
+            "total_users":    1000,
+            "active_users":   750,
+            "requests_today": 15000,
+        },
+    })
+}
+
+func readDataHandler(w http.ResponseWriter, r *http.Request) {
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(map[string]interface{}{
+        "message": "Reading data...",
+        "data":    "sensitive read-only data",
+    })
+}
+
+func writeDataHandler(w http.ResponseWriter, r *http.Request) {
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(map[string]interface{}{
+        "message": "Data written successfully",
+        "action":  "write",
+    })
+}
+
+func manageDataHandler(w http.ResponseWriter, r *http.Request) {
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(map[string]interface{}{
+        "message": "Full data management access",
+        "actions": []string{"read", "write", "delete", "modify"},
+    })
+}
+```
+
+### Using http.Handle vs http.HandleFunc
+g8 supports both `http.Handle` and `http.HandleFunc` patterns:
+
+```go
+package main
+
+import (
+    "net/http"
+    "github.com/TwiN/g8/v3"
+)
+
+// Custom handler implementing http.Handler interface
+type CustomHandler struct {
+    message string
+}
+
+func (h *CustomHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+    w.Write([]byte(h.message))
+}
+
+func main() {
+    gate := g8.New().WithAuthorizationService(
+        g8.NewAuthorizationService().WithToken("my-token"),
+    )
+
+    mux := http.NewServeMux()
+
+    // Using http.Handle with gate.Protect
+    customHandler := &CustomHandler{message: "Hello from custom handler"}
+    mux.Handle("/custom", gate.Protect(customHandler))
+
+    // Using http.HandleFunc with gate.ProtectFunc  
+    mux.HandleFunc("/function", gate.ProtectFunc(func(w http.ResponseWriter, r *http.Request) {
+        w.Write([]byte("Hello from handler function"))
+    }))
+
+    // Multiple protection levels
+    mux.Handle("/admin", gate.ProtectWithPermissions(customHandler, []string{"admin"}))
+    mux.HandleFunc("/user", gate.ProtectFuncWithPermission(func(w http.ResponseWriter, r *http.Request) {
+        w.Write([]byte("User area"))
+    }, "user"))
+
+    http.ListenAndServe(":8080", mux)
 }
 ```
